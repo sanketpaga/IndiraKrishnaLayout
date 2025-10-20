@@ -1,0 +1,386 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>Payment Management</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-header collapse="condense">
+    <ion-toolbar>
+      <ion-title size="large">Payment Management</ion-title>
+    </ion-toolbar>
+  </ion-header>
+
+  <ion-refresher slot="fixed" (ionRefresh)="onRefresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <!-- Payment Analytics -->
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>
+        <ion-icon name="stats-chart-outline"></ion-icon>
+        Payment Analytics
+      </ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <ion-grid>
+        <ion-row>
+          <ion-col size="6" size-md="3">
+            <div class="stat-box">
+              <ion-icon name="trending-up-outline" color="success"></ion-icon>
+              <h3>{{ formatCurrency(totalReceived) }}</h3>
+              <p>Total Received</p>
+            </div>
+          </ion-col>
+          <ion-col size="6" size-md="3">
+            <div class="stat-box">
+              <ion-icon name="time-outline" color="warning"></ion-icon>
+              <h3>{{ formatCurrency(totalPending) }}</h3>
+              <p>Total Pending</p>
+            </div>
+          </ion-col>
+          <ion-col size="6" size-md="3">
+            <div class="stat-box">
+              <ion-icon name="cash-outline" color="primary"></ion-icon>
+              <h3>{{ formatCurrency(monthlyCollection) }}</h3>
+              <p>This Month</p>
+            </div>
+          </ion-col>
+          <ion-col size="6" size-md="3">
+            <div class="stat-box">
+              <ion-icon name="alert-circle" color="danger"></ion-icon>
+              <h3>{{ formatCurrency(overdueAmount) }}</h3>
+              <p>Overdue</p>
+            </div>
+          </ion-col>
+        </ion-row>
+      </ion-grid>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Search and Filters -->
+  <div class="search-section">
+    <ion-searchbar 
+      [(ngModel)]="searchTerm"
+      (ionInput)="onSearchChange($event)"
+      placeholder="Search by plot, customer, or receipt..."
+      debounce="300">
+    </ion-searchbar>
+    
+    <!-- Survey Filter -->
+    <div class="filter-section">
+      <ion-segment [(ngModel)]="selectedSurvey" (ngModelChange)="onSurveyFilter($event)">
+        <ion-segment-button value="all">
+          <ion-label>All Surveys</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="152/1">
+          <ion-label>152/1 (Bapurao)</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="152/2">
+          <ion-label>152/2 (Narayanrao)</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="152/3">
+          <ion-label>152/3 (Shared)</ion-label>
+        </ion-segment-button>
+      </ion-segment>
+    </div>
+  </div>
+
+  <!-- Payment List -->
+  <div class="payment-list">
+    <ion-card *ngFor="let plot of filteredPlots; trackBy: trackByPlot" class="payment-card">
+      <ion-card-header>
+        <div class="payment-header">
+          <div class="plot-info">
+            <h3>Plot {{ plot.plotNumber }}</h3>
+            <p>{{ plot.surveyNumber }} • {{ plot.purchaser?.name || 'Customer not assigned' }}</p>
+            <ion-chip [color]="getPaymentStatusColor(plot)">
+              <ion-icon [name]="getRemainingAmount(plot) > 0 ? 'time-outline' : 'checkmark-circle'"></ion-icon>
+              <ion-label>{{ getRemainingAmount(plot) > 0 ? 'Pending' : 'Completed' }}</ion-label>
+            </ion-chip>
+          </div>
+          <div class="payment-actions">
+            <ion-button fill="clear" size="small" (click)="openPaymentModal(plot)">
+              <ion-icon name="add-outline"></ion-icon>
+              <ion-label>Add Payment</ion-label>
+            </ion-button>
+          </div>
+        </div>
+      </ion-card-header>
+      
+      <ion-card-content>
+        <!-- Payment Progress -->
+        <div class="payment-progress">
+          <div class="progress-info">
+            <span>{{ formatCurrency(getTotalPaidAmount(plot)) }} / {{ formatCurrency(plot.totalCost) }}</span>
+            <span class="remaining" *ngIf="getRemainingAmount(plot) > 0">
+              Remaining: {{ formatCurrency(getRemainingAmount(plot)) }}
+            </span>
+          </div>
+          <ion-progress-bar [value]="getPaymentProgress(plot)" [color]="getPaymentStatusColor(plot)"></ion-progress-bar>
+        </div>
+
+        <!-- Payment History -->
+        <ion-accordion-group *ngIf="plot.payments.length > 0">
+          <ion-accordion>
+            <ion-item slot="header">
+              <ion-icon name="receipt-outline" slot="start"></ion-icon>
+              <ion-label>
+                Payment History ({{ plot.payments.length }})
+              </ion-label>
+            </ion-item>
+            <div class="ion-padding" slot="content">
+              <ion-list>
+                <ion-item *ngFor="let payment of plot.payments; trackBy: trackByPayment" lines="none" 
+                         [class.editing-payment]="isEditMode && selectedPayment?.id === payment.id">
+                  <ion-icon [name]="getMethodIcon(payment.mode)" slot="start" [color]="'medium'"></ion-icon>
+                  <ion-label>
+                    <h3>{{ formatCurrency(payment.amount) }}</h3>
+                    <p>{{ formatDate(payment.date) }} • {{ payment.mode }}</p>
+                    <p *ngIf="payment.description"><small>{{ payment.description }}</small></p>
+                  </ion-label>
+                  <ion-button fill="clear" slot="end" (click)="editPayment(payment, plot)">
+                    <ion-icon name="create-outline"></ion-icon>
+                  </ion-button>
+                  <ion-button fill="clear" slot="end" (click)="deletePayment(payment, plot)" color="danger">
+                    <ion-icon name="trash-outline"></ion-icon>
+                  </ion-button>
+                  <ion-button fill="clear" slot="end" (click)="openReceiptModal(payment)">
+                    <ion-icon name="receipt-outline"></ion-icon>
+                  </ion-button>
+                </ion-item>
+              </ion-list>
+            </div>
+          </ion-accordion>
+        </ion-accordion-group>
+
+        <!-- No Payments Message -->
+        <div *ngIf="plot.payments.length === 0" class="no-payments">
+          <ion-icon name="receipt-outline" color="medium"></ion-icon>
+          <p>No payments recorded yet</p>
+        </div>
+      </ion-card-content>
+    </ion-card>
+  </div>
+
+  <!-- Payment Modal -->
+  <ion-modal [isOpen]="isPaymentModalOpen" (willDismiss)="closePaymentModal()">
+    <ng-template>
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>{{ isEditMode ? 'Edit Payment' : 'Add Payment' }}</ion-title>
+          <ion-button slot="end" fill="clear" (click)="closePaymentModal()">
+            <ion-icon name="close-outline"></ion-icon>
+          </ion-button>
+        </ion-toolbar>
+      </ion-header>
+      
+      <ion-content>
+        <div class="form-content" *ngIf="selectedPlot">
+          <ion-card>
+            <ion-card-header>
+              <ion-card-title>Plot Information</ion-card-title>
+            </ion-card-header>
+            <ion-card-content>
+              <ion-grid>
+                <ion-row>
+                  <ion-col size="6">
+                    <strong>Plot:</strong> {{ selectedPlot.plotNumber }}
+                  </ion-col>
+                  <ion-col size="6">
+                    <strong>Survey:</strong> {{ selectedPlot.surveyNumber }}
+                  </ion-col>
+                </ion-row>
+                <ion-row>
+                  <ion-col size="12">
+                    <strong>Customer:</strong> {{ selectedPlot.purchaser?.name || 'Customer not assigned' }}
+                  </ion-col>
+                </ion-row>
+              </ion-grid>
+              
+              <ion-grid>
+                <ion-row>
+                  <ion-col size="6">
+                    <strong>Total Cost:</strong> {{ formatCurrency(selectedPlot.totalCost) }}
+                  </ion-col>
+                  <ion-col size="6">
+                    <strong>Paid:</strong> {{ formatCurrency(getTotalPaidAmount(selectedPlot)) }}
+                  </ion-col>
+                </ion-row>
+                <ion-row>
+                  <ion-col size="6">
+                    <strong>Remaining:</strong> 
+                    <ion-chip [color]="getRemainingAmount(selectedPlot) > 0 ? 'warning' : 'success'">
+                      {{ formatCurrency(getRemainingAmount(selectedPlot)) }}
+                    </ion-chip>
+                  </ion-col>
+                  <ion-col size="6">
+                    <ion-button 
+                      size="small" 
+                      fill="outline" 
+                      (click)="fillRemainingAmount()"
+                      [disabled]="getRemainingAmount(selectedPlot) <= 0">
+                      Fill Remaining
+                    </ion-button>
+                  </ion-col>
+                </ion-row>
+              </ion-grid>
+            </ion-card-content>
+          </ion-card>
+
+          <ion-card>
+            <ion-card-header>
+              <ion-card-title>Payment Details</ion-card-title>
+            </ion-card-header>
+            <ion-card-content>
+              <ion-list>
+                <ion-item>
+                  <ion-input 
+                    [(ngModel)]="paymentForm.amount"
+                    type="number"
+                    label="Payment Amount (₹)"
+                    placeholder="Enter amount"
+                    min="1">
+                  </ion-input>
+                </ion-item>
+
+                <ion-item>
+                  <ion-select 
+                    [(ngModel)]="paymentForm.mode" 
+                    placeholder="Payment Method"
+                    label="Payment Method">
+                    <ion-select-option value="CASH">Cash</ion-select-option>
+                    <ion-select-option value="CHEQUE">Cheque</ion-select-option>
+                    <ion-select-option value="BANK_TRANSFER">Bank Transfer</ion-select-option>
+                    <ion-select-option value="UPI">UPI</ion-select-option>
+                    <ion-select-option value="CARD">Card</ion-select-option>
+                  </ion-select>
+                </ion-item>
+
+                <ion-item>
+                  <ion-input 
+                    [(ngModel)]="paymentForm.date"
+                    type="date"
+                    label="Payment Date"
+                    label-placement="stacked">
+                  </ion-input>
+                </ion-item>
+
+                <ion-item>
+                  <ion-input 
+                    [(ngModel)]="paymentForm.receiptNumber"
+                    type="text"
+                    label="Receipt Number"
+                    readonly="true">
+                  </ion-input>
+                </ion-item>
+
+                <ion-item>
+                  <ion-textarea 
+                    [(ngModel)]="paymentForm.description"
+                    label="Description"
+                    placeholder="Payment description (optional)"
+                    rows="3">
+                  </ion-textarea>
+                </ion-item>
+              </ion-list>
+            </ion-card-content>
+          </ion-card>
+
+          <div class="form-actions">
+            <ion-button expand="block" (click)="savePayment()" [disabled]="!paymentForm.amount || paymentForm.amount <= 0">
+              {{ isEditMode ? 'Update Payment' : 'Record Payment' }}
+            </ion-button>
+            <ion-button expand="block" fill="outline" (click)="closePaymentModal()">
+              Cancel
+            </ion-button>
+          </div>
+        </div>
+      </ion-content>
+    </ng-template>
+  </ion-modal>
+
+  <!-- Receipt Modal -->
+  <ion-modal [isOpen]="isReceiptModalOpen" (willDismiss)="closeReceiptModal()">
+    <ng-template>
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>Payment Receipt</ion-title>
+          <ion-button slot="end" fill="clear" (click)="closeReceiptModal()">
+            <ion-icon name="close-outline"></ion-icon>
+          </ion-button>
+        </ion-toolbar>
+      </ion-header>
+      
+      <ion-content>
+        <div class="receipt-content" *ngIf="selectedPayment">
+          <ion-card>
+            <ion-card-header>
+              <ion-card-title>Indira Krishna Layout</ion-card-title>
+              <p>Payment Receipt</p>
+            </ion-card-header>
+            <ion-card-content>
+              <ion-list>
+                <ion-item>
+                  <ion-label>
+                    <strong>Receipt No:</strong>
+                    <p>{{ selectedPayment.receiptNumber || selectedPayment.id }}</p>
+                  </ion-label>
+                </ion-item>
+                <ion-item>
+                  <ion-label>
+                    <strong>Date:</strong>
+                    <p>{{ formatDate(selectedPayment.date) }}</p>
+                  </ion-label>
+                </ion-item>
+                <ion-item>
+                  <ion-label>
+                    <strong>Plot:</strong>
+                    <p>{{ selectedPayment.plotNumber }} ({{ selectedPayment.surveyNumber }})</p>
+                  </ion-label>
+                </ion-item>
+                <ion-item>
+                  <ion-label>
+                    <strong>Customer:</strong>
+                    <p>{{ selectedPayment.customerName }}</p>
+                  </ion-label>
+                </ion-item>
+                <ion-item>
+                  <ion-label>
+                    <strong>Amount:</strong>
+                    <p>{{ formatCurrency(selectedPayment.amount) }}</p>
+                  </ion-label>
+                </ion-item>
+                <ion-item>
+                  <ion-label>
+                    <strong>Payment Method:</strong>
+                    <p>{{ selectedPayment.mode }}</p>
+                  </ion-label>
+                </ion-item>
+                <ion-item *ngIf="selectedPayment.description">
+                  <ion-label>
+                    <strong>Description:</strong>
+                    <p>{{ selectedPayment.description }}</p>
+                  </ion-label>
+                </ion-item>
+              </ion-list>
+
+              <div class="receipt-actions">
+                <ion-button expand="block" (click)="downloadReceipt(selectedPayment)">
+                  <ion-icon name="download-outline" slot="start"></ion-icon>
+                  Download
+                </ion-button>
+                <ion-button expand="block" fill="outline" (click)="printReceipt(selectedPayment)">
+                  <ion-icon name="print-outline" slot="start"></ion-icon>
+                  Print
+                </ion-button>
+              </div>
+            </ion-card-content>
+          </ion-card>
+        </div>
+      </ion-content>
+    </ng-template>
+  </ion-modal>
+
+</ion-content>

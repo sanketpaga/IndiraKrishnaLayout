@@ -1,0 +1,179 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>Indira Krishna Layout</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-header collapse="condense">
+    <ion-toolbar>
+      <ion-title size="large">Indira Krishna Layout</ion-title>
+    </ion-toolbar>
+  </ion-header>
+
+  <ion-refresher slot="fixed" (ionRefresh)="onRefresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <div *ngIf="loading" class="loading-container">
+    <ion-progress-bar type="indeterminate"></ion-progress-bar>
+  </div>
+
+  <div *ngIf="!loading && dashboardStats" class="dashboard-content">
+    <!-- Overall Statistics -->
+    <ion-grid>
+      <ion-row>
+        <ion-col size="12">
+          <ion-card>
+            <ion-card-header>
+              <ion-card-title>
+                <ion-icon name="stats-chart-outline"></ion-icon>
+                Overall Statistics
+              </ion-card-title>
+            </ion-card-header>
+            <ion-card-content>
+              <ion-grid>
+                <ion-row>
+                  <ion-col size="6" size-md="3">
+                    <div class="stat-item">
+                      <ion-icon name="business-outline" color="primary"></ion-icon>
+                      <h2>{{ formatNumber(dashboardStats.totalPlots) }}</h2>
+                      <p>Total Plots</p>
+                    </div>
+                  </ion-col>
+                  <ion-col size="6" size-md="3">
+                    <div class="stat-item">
+                      <ion-icon name="trending-up-outline" color="success"></ion-icon>
+                      <h2>{{ formatNumber(dashboardStats.totalSoldPlots) }}</h2>
+                      <p>Sold Plots</p>
+                    </div>
+                  </ion-col>
+                  <ion-col size="6" size-md="3">
+                    <div class="stat-item">
+                      <ion-icon name="cash-outline" color="success"></ion-icon>
+                      <h2>{{ formatCurrency(dashboardStats.totalRevenue) }}</h2>
+                      <p>Total Revenue</p>
+                    </div>
+                  </ion-col>
+                  <ion-col size="6" size-md="3">
+                    <div class="stat-item">
+                      <ion-icon name="cash-outline" color="warning"></ion-icon>
+                      <h2>{{ formatCurrency(dashboardStats.pendingAmount) }}</h2>
+                      <p>Pending Amount</p>
+                    </div>
+                  </ion-col>
+                </ion-row>
+              </ion-grid>
+            </ion-card-content>
+          </ion-card>
+        </ion-col>
+      </ion-row>
+    </ion-grid>
+
+    <!-- Survey-wise Breakdown -->
+    <ion-grid>
+      <ion-row>
+        <ion-col size="12" size-md="4" *ngFor="let survey of dashboardStats.surveySummaries">
+          <ion-card>
+            <ion-card-header>
+              <ion-card-title>{{ getSurveyDisplayName(survey.surveyNumber) }}</ion-card-title>
+            </ion-card-header>
+            <ion-card-content>
+              <div class="survey-stats">
+                <div class="progress-section">
+                  <div class="progress-info">
+                    <span>Sales Progress</span>
+                    <span>{{ survey.soldPlots }}/{{ survey.totalPlots }}</span>
+                  </div>
+                  <ion-progress-bar 
+                    [value]="getProgressValue(survey.soldPlots, survey.totalPlots)"
+                    color="success">
+                  </ion-progress-bar>
+                </div>
+
+                <div class="status-grid">
+                  <div class="status-item available">
+                    <span class="count">{{ survey.availablePlots }}</span>
+                    <span class="label">Available</span>
+                  </div>
+                  <div class="status-item pre-booked">
+                    <span class="count">{{ survey.preBookedPlots }}</span>
+                    <span class="label">Pre-booked</span>
+                  </div>
+                  <div class="status-item sold">
+                    <span class="count">{{ survey.soldPlots }}</span>
+                    <span class="label">Sold</span>
+                  </div>
+                </div>
+
+                <div class="financial-info">
+                  <div class="financial-item">
+                    <span class="label">Total Revenue</span>
+                    <span class="value">{{ formatCurrency(survey.totalRevenue) }}</span>
+                  </div>
+                  <div class="financial-item">
+                    <span class="label">Pending Amount</span>
+                    <span class="value">{{ formatCurrency(survey.pendingAmount) }}</span>
+                  </div>
+                  <div class="financial-item">
+                    <span class="label">Total Area</span>
+                    <span class="value">{{ formatNumber(survey.totalArea) }} sq.m</span>
+                  </div>
+                </div>
+              </div>
+            </ion-card-content>
+          </ion-card>
+        </ion-col>
+      </ion-row>
+    </ion-grid>
+
+    <!-- Quick Actions -->
+    <ion-grid>
+      <ion-row>
+        <ion-col size="12">
+          <ion-card>
+            <ion-card-header>
+              <ion-card-title>Quick Actions</ion-card-title>
+            </ion-card-header>
+            <ion-card-content>
+              <ion-grid>
+                <ion-row>
+                  <ion-col size="6" size-md="3">
+                    <ion-button expand="block" fill="outline" [routerLink]="['/tabs/layout']">
+                      <ion-icon name="grid" slot="start"></ion-icon>
+                      View Layout
+                    </ion-button>
+                  </ion-col>
+                  <ion-col size="6" size-md="3">
+                    <ion-button expand="block" fill="outline" [routerLink]="['/tabs/plots']">
+                      <ion-icon name="business" slot="start"></ion-icon>
+                      Manage Plots
+                    </ion-button>
+                  </ion-col>
+                  <ion-col size="6" size-md="3">
+                    <ion-button expand="block" fill="outline" [routerLink]="['/tabs/payments']">
+                      <ion-icon name="card" slot="start"></ion-icon>
+                      Payments
+                    </ion-button>
+                  </ion-col>
+                  <ion-col size="6" size-md="3">
+                    <ion-button expand="block" fill="solid" (click)="loadDashboardData()">
+                      <ion-icon name="refresh" slot="start"></ion-icon>
+                      Refresh
+                    </ion-button>
+                  </ion-col>
+                  <ion-col size="6" size-md="3">
+                    <ion-button expand="block" fill="outline" color="secondary" [routerLink]="['/admin']">
+                      <ion-icon name="settings" slot="start"></ion-icon>
+                      Admin Panel
+                    </ion-button>
+                  </ion-col>
+                </ion-row>
+              </ion-grid>
+            </ion-card-content>
+          </ion-card>
+        </ion-col>
+      </ion-row>
+    </ion-grid>
+  </div>
+</ion-content>

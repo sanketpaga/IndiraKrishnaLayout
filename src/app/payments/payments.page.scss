@@ -1,0 +1,370 @@
+// Payment Analytics Section
+.stat-box {
+  text-align: center;
+  padding: 12px;
+  
+  ion-icon {
+    font-size: 2rem;
+    margin-bottom: 8px;
+  }
+  
+  h3 {
+    margin: 0 0 4px 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--ion-color-dark);
+  }
+  
+  p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--ion-color-medium);
+  }
+}
+
+// Search and Filter Section
+.search-section {
+  padding: 16px;
+  background: var(--ion-color-light);
+  
+  ion-searchbar {
+    margin-bottom: 16px;
+  }
+  
+  .filter-section {
+    ion-segment {
+      ion-segment-button {
+        font-size: 0.85rem;
+        
+        ion-label {
+          font-weight: 500;
+        }
+      }
+    }
+  }
+}
+
+// Payment List Section
+.payment-list {
+  padding: 16px;
+}
+
+.payment-card {
+  margin-bottom: 16px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  
+  .payment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    
+    .plot-info {
+      flex: 1;
+      
+      h3 {
+        margin: 0 0 4px 0;
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: var(--ion-color-primary);
+      }
+      
+      p {
+        margin: 0 0 8px 0;
+        color: var(--ion-color-medium);
+        font-size: 0.9rem;
+      }
+      
+      ion-chip {
+        margin-bottom: 0;
+      }
+    }
+    
+    .payment-actions {
+      ion-button {
+        --color: var(--ion-color-primary);
+      }
+    }
+  }
+  
+  .payment-progress {
+    margin-bottom: 16px;
+    
+    .progress-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 0.9rem;
+      
+      .remaining {
+        color: var(--ion-color-warning);
+        font-weight: 600;
+      }
+    }
+    
+    ion-progress-bar {
+      height: 8px;
+      border-radius: 4px;
+    }
+  }
+  
+  .no-payments {
+    text-align: center;
+    padding: 32px 16px;
+    color: var(--ion-color-medium);
+    
+    ion-icon {
+      font-size: 3rem;
+      margin-bottom: 16px;
+    }
+    
+    p {
+      margin: 0;
+      font-style: italic;
+    }
+  }
+}
+
+// Payment History Accordion
+ion-accordion-group {
+  ion-accordion {
+    ion-item {
+      --padding-start: 0;
+      --inner-padding-start: 0;
+    }
+  }
+  
+  .ion-padding {
+    ion-list {
+      ion-item {
+        --padding-start: 8px;
+        --inner-padding-start: 8px;
+        margin-bottom: 8px;
+        border-radius: 8px;
+        background: var(--ion-color-light);
+        
+        ion-label {
+          h3 {
+            margin: 0 0 4px 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--ion-color-success);
+          }
+          
+          p {
+            margin: 2px 0;
+            font-size: 0.85rem;
+            color: var(--ion-color-medium);
+            
+            small {
+              font-size: 0.8rem;
+              font-style: italic;
+            }
+          }
+        }
+        
+        ion-button {
+          --color: var(--ion-color-primary);
+        }
+      }
+    }
+  }
+}
+
+// Modal Styles
+.form-content {
+  padding: 16px;
+}
+
+.form-actions {
+  padding: 16px 0;
+  
+  ion-button {
+    margin-bottom: 12px;
+  }
+}
+
+.receipt-content {
+  padding: 16px;
+  
+  .receipt-actions {
+    margin-top: 24px;
+    
+    ion-button {
+      margin-bottom: 12px;
+    }
+  }
+}
+
+// Status Color Helpers
+ion-chip {
+  &[color="success"] {
+    --background: var(--ion-color-success);
+    --color: var(--ion-color-success-contrast);
+  }
+  
+  &[color="warning"] {
+    --background: var(--ion-color-warning);
+    --color: var(--ion-color-warning-contrast);
+  }
+  
+  &[color="danger"] {
+    --background: var(--ion-color-danger);
+    --color: var(--ion-color-danger-contrast);
+  }
+}
+
+ion-progress-bar {
+  &[color="success"] {
+    --progress-background: var(--ion-color-success);
+  }
+  
+  &[color="warning"] {
+    --progress-background: var(--ion-color-warning);
+  }
+  
+  &[color="danger"] {
+    --progress-background: var(--ion-color-danger);
+  }
+}
+
+// Payment Method Icons
+.payment-method-icon {
+  margin-right: 8px;
+}
+
+// Responsive Design
+@media (max-width: 768px) {
+  .stat-box {
+    h3 {
+      font-size: 1rem;
+    }
+    
+    p {
+      font-size: 0.8rem;
+    }
+  }
+  
+  .filter-section {
+    ion-segment {
+      ion-segment-button {
+        ion-label {
+          font-size: 0.8rem;
+        }
+      }
+    }
+  }
+  
+  .payment-progress {
+    .progress-info {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+      
+      .remaining {
+        font-size: 0.85rem;
+      }
+    }
+  }
+}
+
+// Floating Action Button
+ion-fab-button {
+  --background: var(--ion-color-primary);
+  --color: var(--ion-color-primary-contrast);
+  
+  ion-icon {
+    font-size: 1.5rem;
+  }
+}
+
+// Editing State
+.editing-payment {
+  --background: var(--ion-color-primary-tint);
+  --color: var(--ion-color-primary-contrast);
+  border-left: 4px solid var(--ion-color-primary);
+  animation: pulse 0.5s ease-in-out;
+}
+
+// Animation Classes
+.slide-in {
+  animation: slideIn 0.3s ease-in-out;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Loading States
+.loading-skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+// Plot Selection Modal Styles
+.plot-selection-content {
+  padding: 16px;
+  
+  ion-searchbar {
+    margin-bottom: 16px;
+  }
+  
+  .plot-item {
+    width: 100%;
+    
+    .plot-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      
+      strong {
+        color: var(--ion-color-dark);
+        font-size: 1.1rem;
+      }
+    }
+    
+    .plot-details {
+      p {
+        margin: 4px 0;
+        font-size: 0.9rem;
+        color: var(--ion-color-medium-shade);
+        
+        strong {
+          color: var(--ion-color-dark);
+          font-weight: 500;
+        }
+      }
+    }
+  }
+}

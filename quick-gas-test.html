@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick Google Apps Script Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+        }
+        .success {
+            border-color: #28a745;
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            border-color: #dc3545;
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .code {
+            background-color: #e9ecef;
+            padding: 10px;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 14px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Quick Google Apps Script Diagnostic</h1>
+        <p>This will test your Google Apps Script deployment with the current Web App URL from your environment files.</p>
+        
+        <div class="code">
+            Web App URL: https://script.google.com/macros/s/AKfycbxLFrfObOYBIwnEQ2r-NoNKmPO-H_NQaxiCgBB0seWOwt-NNcfKaumCRuRx2iY6pV6p2g/exec
+        </div>
+        
+        <button onclick="testScript()">🧪 Test Google Apps Script</button>
+        <button onclick="testDirectURL()">🌐 Test Direct URL</button>
+        <button onclick="clearResults()">🧹 Clear Results</button>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxLFrfObOYBIwnEQ2r-NoNKmPO-H_NQaxiCgBB0seWOwt-NNcfKaumCRuRx2iY6pV6p2g/exec';
+        
+        function showResult(content, isSuccess = false) {
+            const results = document.getElementById('results');
+            const resultClass = isSuccess ? 'success' : 'error';
+            const icon = isSuccess ? '✅' : '❌';
+            const timestamp = new Date().toLocaleTimeString();
+            
+            results.innerHTML += `<div class="result ${resultClass}">[${timestamp}] ${icon} ${content}</div>`;
+            results.scrollTop = results.scrollHeight;
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        function testScript() {
+            showResult('Testing Google Apps Script with JSONP callback...', false);
+            
+            const testUrl = `${WEB_APP_URL}?action=test&callback=googleScriptCallback&_t=${Date.now()}`;
+            
+            // Set up callback
+            window.googleScriptCallback = function(response) {
+                showResult(`JSONP Response received:\n${JSON.stringify(response, null, 2)}`, response.success);
+                delete window.googleScriptCallback;
+            };
+
+            // Create script tag
+            const script = document.createElement('script');
+            script.src = testUrl;
+            script.onerror = function() {
+                showResult('❌ Script failed to load - check if Google Apps Script is deployed correctly');
+                delete window.googleScriptCallback;
+            };
+
+            document.head.appendChild(script);
+
+            // Timeout after 10 seconds
+            setTimeout(() => {
+                if (window.googleScriptCallback) {
+                    showResult('⏰ Test timed out - script may not be responding');
+                    delete window.googleScriptCallback;
+                }
+                if (document.head.contains(script)) {
+                    document.head.removeChild(script);
+                }
+            }, 10000);
+        }
+
+        function testDirectURL() {
+            showResult('Opening direct URL in new tab...', false);
+            const testUrl = `${WEB_APP_URL}?action=test&_t=${Date.now()}`;
+            window.open(testUrl, '_blank');
+            showResult('Direct URL opened. Check the new tab for JSON response.\nExpected: {"success": true, "message": "Google Apps Script Web App is working correctly", ...}', true);
+        }
+
+        // Auto-run test on page load
+        window.onload = function() {
+            showResult('Page loaded. Ready to test Google Apps Script.', true);
+            showResult('If tests fail, check:\n1. Google Apps Script code is updated\n2. Web app is deployed with "Execute as: Me" and "Who has access: Anyone"\n3. You\'ve authorized the script permissions', false);
+        };
+    </script>
+</body>
+</html>

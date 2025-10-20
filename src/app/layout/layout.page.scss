@@ -1,0 +1,165 @@
+.survey-selector {
+  padding: 16px;
+  background: var(--ion-color-light);
+  
+  ion-segment {
+    background: white;
+    border-radius: 8px;
+  }
+}
+
+.status-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: space-around;
+  
+  .legend-item {
+    flex: 1;
+    min-width: 120px;
+    
+    ion-chip {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+}
+
+.plot-grid-container {
+  padding: 16px;
+  overflow-x: auto;
+}
+
+.plot-grid {
+  min-width: 600px;
+  
+  .plot-row {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 2px;
+  }
+  
+  .plot-cell {
+    flex: 1;
+    min-width: 60px;
+    height: 60px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    
+    &:hover {
+      transform: scale(1.05);
+      border-color: var(--ion-color-primary);
+      z-index: 1;
+    }
+    
+    .plot-number {
+      font-weight: bold;
+      font-size: 0.9rem;
+      line-height: 1;
+    }
+    
+    .plot-dimensions {
+      font-size: 0.7rem;
+      opacity: 0.8;
+      line-height: 1;
+    }
+    
+    .status-icon {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      font-size: 0.8rem;
+    }
+  }
+}
+
+// Status-specific styling
+.plot-cell {
+  &.available {
+    background-color: #f4f4f4 !important;
+    color: #333 !important;
+  }
+  
+  &.pre-booked {
+    background-color: #ffc409 !important;
+    color: #fff !important;
+  }
+  
+  &.sold {
+    background-color: #2dd36f !important;
+    color: #fff !important;
+  }
+}
+
+ion-card {
+  margin-bottom: 16px;
+  border-radius: 12px;
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .plot-grid {
+    min-width: 400px;
+    
+    .plot-cell {
+      min-width: 40px;
+      height: 40px;
+      
+      .plot-number {
+        font-size: 0.8rem;
+      }
+      
+      .plot-dimensions {
+        font-size: 0.6rem;
+      }
+      
+      .status-icon {
+        font-size: 0.7rem;
+      }
+    }
+  }
+  
+  .status-legend {
+    .legend-item {
+      min-width: 100px;
+      
+      ion-chip {
+        font-size: 0.8rem;
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .plot-grid-container {
+    padding: 8px;
+  }
+  
+  .plot-grid {
+    min-width: 320px;
+    
+    .plot-cell {
+      min-width: 32px;
+      height: 32px;
+      
+      .plot-number {
+        font-size: 0.7rem;
+      }
+      
+      .plot-dimensions {
+        display: none; // Hide dimensions on very small screens
+      }
+      
+      .status-icon {
+        font-size: 0.6rem;
+      }
+    }
+  }
+}

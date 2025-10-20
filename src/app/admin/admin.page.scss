@@ -1,0 +1,53 @@
+.admin-container {
+  padding: 16px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+ion-card {
+  margin-bottom: 16px;
+}
+
+ion-card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-item {
+  text-align: center;
+  padding: 8px;
+}
+
+.status-item .count {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.status-item .label {
+  display: block;
+  font-size: 0.875rem;
+  color: var(--ion-color-medium);
+}
+
+ion-note {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+ion-button {
+  margin: 4px 0;
+}
+
+@media (max-width: 768px) {
+  .admin-container {
+    padding: 8px;
+  }
+  
+  ion-card {
+    margin-bottom: 12px;
+  }
+}

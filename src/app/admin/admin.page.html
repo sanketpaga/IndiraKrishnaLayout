@@ -1,0 +1,254 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>Admin Panel</ion-title>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/tabs/dashboard"></ion-back-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <div class="admin-container">
+    
+    <!-- Data Management Section -->
+    <ion-grid>
+      <ion-row>
+        <ion-col size="12">
+          <ion-card>
+            <ion-card-header>
+              <ion-card-title>
+                <ion-icon name="server-outline"></ion-icon>
+                Data Management
+              </ion-card-title>
+            </ion-card-header>
+            <ion-card-content>
+              <ion-grid>
+                <ion-row>
+                  <ion-col size="12" size-md="6">
+                    <ion-button 
+                      expand="block" 
+                      fill="outline" 
+                      color="tertiary"
+                      (click)="loadPreGeneratedPlots()">
+                      <ion-icon name="refresh" slot="start"></ion-icon>
+                      Load 290 Pre-defined Plots
+                    </ion-button>
+                  </ion-col>
+                  <ion-col size="12" size-md="6">
+                    <ion-button 
+                      expand="block" 
+                      fill="outline" 
+                      color="warning"
+                      (click)="showPlotSummary()">
+                      <ion-icon name="bar-chart-outline" slot="start"></ion-icon>
+                      View Plot Summary
+                    </ion-button>
+                  </ion-col>
+                </ion-row>
+                <ion-row>
+                  <ion-col size="12" size-md="4">
+                    <ion-button 
+                      expand="block" 
+                      fill="outline" 
+                      color="primary"
+                      [disabled]="!isGoogleSheetsEnabled"
+                      (click)="loadFromGoogleSheets()">
+                      <ion-icon name="cloud-outline" slot="start"></ion-icon>
+                      Load from Google Sheets
+                    </ion-button>
+                  </ion-col>
+                  <ion-col size="12" size-md="4">
+                    <ion-button 
+                      expand="block" 
+                      fill="outline" 
+                      color="secondary"
+                      (click)="loadSampleData()">
+                      <ion-icon name="people-outline" slot="start"></ion-icon>
+                      Add 25 Sample Sales
+                    </ion-button>
+                  </ion-col>
+                  <ion-col size="12" size-md="4">
+                    <ion-button 
+                      expand="block" 
+                      fill="outline" 
+                      color="medium"
+                      (click)="clearAllPlots()">
+                      <ion-icon name="trash-outline" slot="start"></ion-icon>
+                      Clear All Plots
+                    </ion-button>
+                  </ion-col>
+                </ion-row>
+                <ion-row>
+                  <ion-col size="12">
+                    <ion-note color="medium">
+                      <ion-icon name="information-circle-outline"></ion-icon>
+                      Pre-defined plots: Survey 152/1 (67), Survey 152/2 (57), Survey 152/3 (166) = 290 total plots (all AVAILABLE by default)
+                    </ion-note>
+                  </ion-col>
+                </ion-row>
+              </ion-grid>
+            </ion-card-content>
+          </ion-card>
+        </ion-col>
+      </ion-row>
+    </ion-grid>
+
+    <!-- Export/Import Section -->
+    <ion-grid>
+      <ion-row>
+        <ion-col size="12">
+          <ion-card>
+            <ion-card-header>
+              <ion-card-title>
+                <ion-icon name="document-text-outline"></ion-icon>
+                Export & Import
+              </ion-card-title>
+            </ion-card-header>
+            <ion-card-content>
+              <ion-grid>
+                <ion-row>
+                  <ion-col size="12" size-md="6">
+                    <ion-button 
+                      expand="block" 
+                      fill="outline" 
+                      color="primary"
+                      (click)="downloadPlotsAsCSV()">
+                      <ion-icon name="download-outline" slot="start"></ion-icon>
+                      Download CSV
+                    </ion-button>
+                  </ion-col>
+                  <ion-col size="12" size-md="6">
+                    <ion-button 
+                      expand="block" 
+                      fill="outline" 
+                      color="primary"
+                      (click)="copyPlotsToClipboard()">
+                      <ion-icon name="copy-outline" slot="start"></ion-icon>
+                      Copy to Clipboard
+                    </ion-button>
+                  </ion-col>
+                </ion-row>
+                <ion-row>
+                  <ion-col size="12">
+                    <ion-note color="primary">
+                      <ion-icon name="document-text-outline"></ion-icon>
+                      <strong>Manual Export:</strong> Use "Download CSV" or "Copy to Clipboard" to get formatted data for manual paste into Google Sheets
+                    </ion-note>
+                  </ion-col>
+                </ion-row>
+              </ion-grid>
+            </ion-card-content>
+          </ion-card>
+        </ion-col>
+      </ion-row>
+    </ion-grid>
+
+    <!-- Google Sheets Integration Section -->
+    <ion-grid>
+      <ion-row>
+        <ion-col size="12">
+          <ion-card>
+            <ion-card-header>
+              <ion-card-title>
+                <ion-icon name="cloud-outline"></ion-icon>
+                Google Sheets Integration
+              </ion-card-title>
+            </ion-card-header>
+            <ion-card-content>
+              <ion-grid>
+                <ion-row>
+                  <ion-col size="12" size-md="6">
+                    <ion-item>
+                      <ion-label>Enable Google Sheets</ion-label>
+                      <ion-toggle 
+                        [(ngModel)]="isGoogleSheetsEnabled" 
+                        (ionChange)="toggleGoogleSheets($event)">
+                      </ion-toggle>
+                    </ion-item>
+                  </ion-col>
+                  <ion-col size="12" size-md="6">
+                    <ion-button 
+                      expand="block" 
+                      fill="outline" 
+                      [disabled]="!isGoogleSheetsEnabled"
+                      (click)="openGoogleSheetsConfig()">
+                      <ion-icon name="settings-outline" slot="start"></ion-icon>
+                      Configure Google Sheets
+                    </ion-button>
+                  </ion-col>
+                </ion-row>
+                <ion-row>
+                  <ion-col size="12" size-md="6">
+                    <ion-button 
+                      expand="block" 
+                      fill="outline" 
+                      color="secondary"
+                      [disabled]="!isGoogleSheetsEnabled"
+                      (click)="testGoogleAppsScript()">
+                      <ion-icon name="cloud-outline" slot="start"></ion-icon>
+                      Test Connection
+                    </ion-button>
+                  </ion-col>
+                  <ion-col size="12" size-md="6">
+                    <ion-button 
+                      expand="block" 
+                      fill="solid" 
+                      color="success"
+                      [disabled]="!isGoogleSheetsEnabled"
+                      (click)="syncAllPlotsToGoogleSheets()">
+                      <ion-icon name="cloud-upload-outline" slot="start"></ion-icon>
+                      Sync to Google Sheets
+                    </ion-button>
+                  </ion-col>
+                </ion-row>
+                <ion-row *ngIf="isGoogleSheetsEnabled">
+                  <ion-col size="12">
+                    <ion-note color="primary">
+                      <ion-icon name="information-circle-outline"></ion-icon>
+                      Google Sheets integration is enabled. Data will be synced with your configured spreadsheet.
+                    </ion-note>
+                  </ion-col>
+                </ion-row>
+              </ion-grid>
+            </ion-card-content>
+          </ion-card>
+        </ion-col>
+      </ion-row>
+    </ion-grid>
+
+    <!-- System Information -->
+    <ion-grid>
+      <ion-row>
+        <ion-col size="12">
+          <ion-card>
+            <ion-card-header>
+              <ion-card-title>
+                <ion-icon name="information-circle-outline"></ion-icon>
+                System Information
+              </ion-card-title>
+            </ion-card-header>
+            <ion-card-content>
+              <ion-list>
+                <ion-item>
+                  <ion-label>Total Plots Loaded</ion-label>
+                  <ion-note slot="end">{{ getTotalPlots() }}</ion-note>
+                </ion-item>
+                <ion-item>
+                  <ion-label>Google Sheets Integration</ion-label>
+                  <ion-note slot="end" [color]="isGoogleSheetsEnabled ? 'success' : 'medium'">
+                    {{ isGoogleSheetsEnabled ? 'Enabled' : 'Disabled' }}
+                  </ion-note>
+                </ion-item>
+                <ion-item>
+                  <ion-label>Last Updated</ion-label>
+                  <ion-note slot="end">{{ getCurrentTime() }}</ion-note>
+                </ion-item>
+              </ion-list>
+            </ion-card-content>
+          </ion-card>
+        </ion-col>
+      </ion-row>
+    </ion-grid>
+
+  </div>
+</ion-content>

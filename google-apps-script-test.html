@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Apps Script Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        
+        button:hover {
+            background-color: #0056b3;
+        }
+        
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Google Apps Script Test Tool</h1>
+        <p>Use this tool to test your Google Apps Script web app before integrating with the mobile app.</p>
+        
+        <div class="test-section">
+            <h3>📋 Configuration</h3>
+            <label for="webAppUrl">Web App URL:</label>
+            <input type="text" id="webAppUrl" placeholder="https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec">
+            <small>Paste your Google Apps Script Web App URL here</small>
+        </div>
+        
+        <div class="test-section">
+            <h3>🔍 Connection Test</h3>
+            <p>Test basic connectivity to your Google Apps Script</p>
+            <button onclick="testConnection()">Test Connection</button>
+            <div id="connectionResult"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>📊 Spreadsheet Test</h3>
+            <p>Test if the script can access your Google Sheets</p>
+            <button onclick="testSpreadsheet()">Test Spreadsheet Access</button>
+            <div id="spreadsheetResult"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>💾 Sample Plot Save</h3>
+            <p>Test saving a sample plot to your Google Sheets</p>
+            <button onclick="testPlotSave()">Test Plot Save</button>
+            <div id="plotSaveResult"></div>
+        </div>
+    </div>
+
+    <script>
+        function getWebAppUrl() {
+            const url = document.getElementById('webAppUrl').value.trim();
+            if (!url) {
+                alert('Please enter your Web App URL first');
+                return null;
+            }
+            return url;
+        }
+
+        function showResult(elementId, success, message, data = null) {
+            const element = document.getElementById(elementId);
+            const resultClass = success ? 'success' : 'error';
+            const icon = success ? '✅' : '❌';
+            
+            let content = `${icon} ${message}\n`;
+            if (data) {
+                content += `\nResponse Data:\n${JSON.stringify(data, null, 2)}`;
+            }
+            
+            element.innerHTML = `<div class="result ${resultClass}">${content}</div>`;
+        }
+
+        function testConnection() {
+            const webAppUrl = getWebAppUrl();
+            if (!webAppUrl) return;
+
+            showResult('connectionResult', true, 'Testing connection...');
+
+            const testUrl = `${webAppUrl}?action=test&callback=connectionTestCallback`;
+            
+            window.connectionTestCallback = function(response) {
+                showResult('connectionResult', response.success, response.message, response);
+                delete window.connectionTestCallback;
+            };
+
+            const script = document.createElement('script');
+            script.src = testUrl;
+            script.onerror = function() {
+                showResult('connectionResult', false, 'Failed to load Google Apps Script - check URL and deployment settings');
+                delete window.connectionTestCallback;
+            };
+
+            document.head.appendChild(script);
+
+            setTimeout(() => {
+                if (window.connectionTestCallback) {
+                    showResult('connectionResult', false, 'Connection test timed out - script may not be responding');
+                    delete window.connectionTestCallback;
+                }
+                if (document.head.contains(script)) {
+                    document.head.removeChild(script);
+                }
+            }, 10000);
+        }
+
+        function testSpreadsheet() {
+            const webAppUrl = getWebAppUrl();
+            if (!webAppUrl) return;
+
+            showResult('spreadsheetResult', true, 'Testing spreadsheet access...');
+
+            // This would normally be a POST request, but for testing we'll try a GET
+            const testUrl = `${webAppUrl}?action=getAllPlots&callback=spreadsheetTestCallback`;
+            
+            window.spreadsheetTestCallback = function(response) {
+                showResult('spreadsheetResult', response.success, 
+                    response.success ? 'Spreadsheet access successful!' : response.message, 
+                    response);
+                delete window.spreadsheetTestCallback;
+            };
+
+            const script = document.createElement('script');
+            script.src = testUrl;
+            script.onerror = function() {
+                showResult('spreadsheetResult', false, 'Failed to test spreadsheet access');
+                delete window.spreadsheetTestCallback;
+            };
+
+            document.head.appendChild(script);
+
+            setTimeout(() => {
+                if (window.spreadsheetTestCallback) {
+                    showResult('spreadsheetResult', false, 'Spreadsheet test timed out');
+                    delete window.spreadsheetTestCallback;
+                }
+                if (document.head.contains(script)) {
+                    document.head.removeChild(script);
+                }
+            }, 10000);
+        }
+
+        function testPlotSave() {
+            const webAppUrl = getWebAppUrl();
+            if (!webAppUrl) return;
+
+            showResult('plotSaveResult', true, 'Testing plot save...');
+
+            // Create a sample plot for testing
+            const samplePlot = {
+                plotNumber: 'TEST-001',
+                surveyNumber: '152/1',
+                dimensions: {
+                    length: 30,
+                    width: 40,
+                    area: 1200
+                },
+                status: 'available',
+                pricePerSqFt: 2500,
+                totalCost: 3000000,
+                lastUpdated: new Date().toISOString()
+            };
+
+            const plotData = encodeURIComponent(JSON.stringify(samplePlot));
+            const testUrl = `${webAppUrl}?action=savePlot&plotData=${plotData}&callback=plotSaveTestCallback`;
+            
+            window.plotSaveTestCallback = function(response) {
+                showResult('plotSaveResult', response.success, 
+                    response.success ? 'Plot save test successful!' : response.message, 
+                    response);
+                delete window.plotSaveTestCallback;
+            };
+
+            const script = document.createElement('script');
+            script.src = testUrl;
+            script.onerror = function() {
+                showResult('plotSaveResult', false, 'Failed to test plot save');
+                delete window.plotSaveTestCallback;
+            };
+
+            document.head.appendChild(script);
+
+            setTimeout(() => {
+                if (window.plotSaveTestCallback) {
+                    showResult('plotSaveResult', false, 'Plot save test timed out');
+                    delete window.plotSaveTestCallback;
+                }
+                if (document.head.contains(script)) {
+                    document.head.removeChild(script);
+                }
+            }, 15000);
+        }
+
+        // Auto-populate the URL if there's a common pattern
+        window.onload = function() {
+            // You can set a default URL here for testing
+            // document.getElementById('webAppUrl').value = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec';
+        };
+    </script>
+</body>
+</html>

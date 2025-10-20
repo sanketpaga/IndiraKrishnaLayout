@@ -1,0 +1,364 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>Indira Krishna Layout - Plot Management</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-header collapse="condense">
+    <ion-toolbar>
+      <ion-title size="large">Plot Management</ion-title>
+    </ion-toolbar>
+  </ion-header>
+
+  <ion-refresher slot="fixed" (ionRefresh)="onRefresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <!-- Search and Filters -->
+  <div class="search-section">
+    <ion-searchbar 
+      [(ngModel)]="searchTerm"
+      (ionInput)="onSearchChange($event)"
+      placeholder="Search by plot number, survey, or customer..."
+      debounce="300">
+    </ion-searchbar>
+    
+    <div class="filter-section">
+      <ion-segment [(ngModel)]="selectedSurvey" (ngModelChange)="onSurveyFilterChange($event)">
+        <ion-segment-button value="all">
+          <ion-label>All Surveys</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="152/1">
+          <ion-label>152/1</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="152/2">
+          <ion-label>152/2</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="152/3">
+          <ion-label>152/3</ion-label>
+        </ion-segment-button>
+      </ion-segment>
+    </div>
+  </div>
+
+  <!-- Plot Summary Stats -->
+  <ion-card>
+    <ion-card-content>
+      <ion-grid>
+        <ion-row>
+          <ion-col size="3">
+            <div class="stat-box">
+              <ion-badge color="primary">{{ filteredPlots.length }}</ion-badge>
+              <ion-label>Total</ion-label>
+            </div>
+          </ion-col>
+          <ion-col size="3">
+            <div class="stat-box">
+              <ion-badge color="light">{{ getFilteredAvailablePlotsCount() }}</ion-badge>
+              <ion-label>Available</ion-label>
+            </div>
+          </ion-col>
+          <ion-col size="3">
+            <div class="stat-box">
+              <ion-badge color="warning">{{ getFilteredPreBookedPlotsCount() }}</ion-badge>
+              <ion-label>Pre-booked</ion-label>
+            </div>
+          </ion-col>
+          <ion-col size="3">
+            <div class="stat-box">
+              <ion-badge color="success">{{ getFilteredSoldPlotsCount() }}</ion-badge>
+              <ion-label>Sold</ion-label>
+            </div>
+          </ion-col>
+        </ion-row>
+      </ion-grid>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Plot List -->
+  <div class="plot-list">
+    <ion-card *ngFor="let plot of filteredPlots; trackBy: trackByPlot" class="plot-card">
+      <ion-card-header>
+        <div class="plot-header">
+          <div class="plot-title">
+            <ion-chip [color]="getStatusColor(plot.status)">
+              <ion-icon [name]="getStatusIcon(plot.status)"></ion-icon>
+              <ion-label>{{ plot.status }}</ion-label>
+            </ion-chip>
+            <h3>Plot {{ plot.plotNumber }}</h3>
+            <p>{{ getSurveyDisplayName(plot.surveyNumber) }}</p>
+          </div>
+          <div class="plot-actions">
+            <ion-button fill="clear" size="small" (click)="openEditPlotModal(plot)">
+              <ion-icon name="create-outline"></ion-icon>
+            </ion-button>
+          </div>
+        </div>
+      </ion-card-header>
+      
+      <ion-card-content>
+        <ion-grid>
+          <ion-row>
+            <ion-col size="6">
+              <div class="plot-info">
+                <ion-icon name="business-outline"></ion-icon>
+                <div>
+                  <strong>Dimensions</strong>
+                  <p>{{ plot.dimensions.length }}m × {{ plot.dimensions.width }}m</p>
+                  <p>{{ plot.dimensions.area | number:'1.1-1' }} sq.m</p>
+                </div>
+              </div>
+            </ion-col>
+            <ion-col size="6">
+              <div class="plot-info">
+                <ion-icon name="cash-outline"></ion-icon>
+                <div>
+                  <strong>Rate & Cost</strong>
+                  <p>₹{{ plot.ratePerSqMeter | number }}/sq.m</p>
+                  <p><strong>{{ formatCurrency(plot.totalCost) }}</strong></p>
+                </div>
+              </div>
+            </ion-col>
+          </ion-row>
+          
+          <ion-row *ngIf="plot.purchaser">
+            <ion-col size="12">
+              <div class="purchaser-info">
+                <ion-icon name="person-outline"></ion-icon>
+                <div>
+                  <strong>{{ plot.purchaser.name }}</strong>
+                  <p>{{ plot.purchaser.mobile }}</p>
+                  <p><small>Registered: {{ plot.purchaser.registrationDate | date:'mediumDate' }}</small></p>
+                </div>
+              </div>
+            </ion-col>
+          </ion-row>
+        </ion-grid>
+      </ion-card-content>
+    </ion-card>
+  </div>
+
+  <!-- Plot Details/Edit Modal -->
+  <ion-modal [isOpen]="isModalOpen" (willDismiss)="closeModal()">
+    <ng-template>
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>
+            Edit Plot
+            <ion-chip *ngIf="isSurveyFieldDisabled()" color="primary" size="small">
+              <ion-icon name="lock-closed-outline"></ion-icon>
+              <ion-label>Survey Locked</ion-label>
+            </ion-chip>
+          </ion-title>
+          <ion-button slot="end" fill="clear" (click)="closeModal()">
+            <ion-icon name="close-outline"></ion-icon>
+          </ion-button>
+        </ion-toolbar>
+      </ion-header>
+      
+      <ion-content>
+        <!-- Loading overlay -->
+        <div *ngIf="isModalLoading" class="loading-overlay">
+          <div class="loading-content">
+            <ion-spinner name="circular" color="primary"></ion-spinner>
+            <p>Loading latest plot data...</p>
+          </div>
+        </div>
+        
+        <div class="form-content" [class.loading-blur]="isModalLoading">
+          <ion-card>
+            <ion-card-header>
+              <ion-card-title>Plot Information</ion-card-title>
+            </ion-card-header>
+            <ion-card-content>
+              <ion-list>
+                <ion-item>
+                  <ion-select 
+                    [(ngModel)]="plotForm.surveyNumber" 
+                    placeholder="Select Survey"
+                    label="Survey Number"
+                    [disabled]="isSurveyFieldDisabled()">
+                    <ion-select-option value="152/1">Survey 152/1 (Bapurao)</ion-select-option>
+                    <ion-select-option value="152/2">Survey 152/2 (Narayanrao)</ion-select-option>
+                    <ion-select-option value="152/3">Survey 152/3 (Shared)</ion-select-option>
+                  </ion-select>
+                </ion-item>
+                
+                <ion-item *ngIf="isSurveyFieldDisabled()">
+                  <ion-icon name="lock-closed-outline" slot="start" color="primary"></ion-icon>
+                  <ion-label>
+                    <p><small><em>{{ getSurveyFieldHelperText() }}</em></small></p>
+                  </ion-label>
+                </ion-item>
+
+                <ion-item>
+                  <ion-input 
+                    [(ngModel)]="plotForm.plotNumber"
+                    type="text"
+                    label="Plot Number"
+                    placeholder="Enter plot number">
+                  </ion-input>
+                </ion-item>
+
+                <ion-item>
+                  <ion-select 
+                    [(ngModel)]="plotForm.owner" 
+                    placeholder="Select Owner"
+                    label="Owner">
+                    <ion-select-option value="BAPURAO">Bapurao</ion-select-option>
+                    <ion-select-option value="NARAYANRAO">Narayanrao</ion-select-option>
+                    <ion-select-option value="JOINT">Joint</ion-select-option>
+                  </ion-select>
+                </ion-item>
+
+                <ion-item>
+                  <ion-select 
+                    [(ngModel)]="plotForm.status" 
+                    placeholder="Select Status"
+                    label="Status"
+                    (ionSelectionChange)="onStatusChange()">
+                    <ion-select-option value="AVAILABLE">Available</ion-select-option>
+                    <ion-select-option value="PRE_BOOKED">Pre-booked</ion-select-option>
+                    <ion-select-option value="SOLD">Sold</ion-select-option>
+                  </ion-select>
+                </ion-item>
+              </ion-list>
+            </ion-card-content>
+          </ion-card>
+
+          <ion-card>
+            <ion-card-header>
+              <ion-card-title>Dimensions & Pricing</ion-card-title>
+            </ion-card-header>
+            <ion-card-content>
+              <ion-list>
+                <ion-item>
+                  <ion-input 
+                    [(ngModel)]="plotForm.dimensions.length"
+                    type="number"
+                    label="Length (meters)"
+                    placeholder="Enter length in meters"
+                    (ionInput)="calculateArea()">
+                  </ion-input>
+                </ion-item>
+
+                <ion-item>
+                  <ion-input 
+                    [(ngModel)]="plotForm.dimensions.width"
+                    type="number"
+                    label="Width (meters)"
+                    placeholder="Enter width in meters"
+                    (ionInput)="calculateArea()">
+                  </ion-input>
+                </ion-item>
+
+                <ion-item>
+                  <ion-input 
+                    [value]="plotForm.dimensions.area | number:'1.2-2'"
+                    readonly="true"
+                    label="Area (sq.m)"
+                    helper="Calculated automatically">
+                  </ion-input>
+                </ion-item>
+
+                <ion-item>
+                  <ion-input 
+                    [(ngModel)]="plotForm.ratePerSqMeter"
+                    type="number"
+                    label="Rate per sq.m (₹)"
+                    placeholder="Enter rate"
+                    (ionInput)="calculateTotalCost()">
+                  </ion-input>
+                </ion-item>
+
+                <ion-item>
+                  <ion-input 
+                    [value]="formatCurrency(plotForm.totalCost)"
+                    readonly="true"
+                    label="Total Cost"
+                    helper="Calculated automatically">
+                  </ion-input>
+                </ion-item>
+
+                <ion-item>
+                  <ion-input 
+                    [(ngModel)]="plotForm.governmentRate"
+                    type="number"
+                    label="Government Rate (₹)"
+                    placeholder="Enter government rate">
+                  </ion-input>
+                </ion-item>
+              </ion-list>
+            </ion-card-content>
+          </ion-card>
+
+          <!-- Customer Information (if sold/pre-booked) -->
+          <ion-card *ngIf="shouldShowCustomerInfo()">
+            <ion-card-header>
+              <ion-card-title>Customer Information</ion-card-title>
+            </ion-card-header>
+            <ion-card-content>
+              <ion-list>
+                <ion-item>
+                  <ion-input 
+                    [(ngModel)]="purchaserInfo!.name"
+                    type="text"
+                    label="Customer Name"
+                    placeholder="Enter customer name">
+                  </ion-input>
+                </ion-item>
+
+                <ion-item>
+                  <ion-input 
+                    [(ngModel)]="purchaserInfo!.mobile"
+                    type="tel"
+                    label="Mobile Number"
+                    placeholder="Enter mobile number">
+                  </ion-input>
+                </ion-item>
+
+                <ion-item>
+                  <ion-input 
+                    [(ngModel)]="purchaserInfo!.email"
+                    type="email"
+                    label="Email"
+                    placeholder="Enter email (optional)">
+                  </ion-input>
+                </ion-item>
+
+                <ion-item>
+                  <ion-textarea 
+                    [(ngModel)]="purchaserInfo!.address"
+                    label="Address"
+                    placeholder="Enter address (optional)"
+                    rows="3">
+                  </ion-textarea>
+                </ion-item>
+
+                <ion-item>
+                  <ion-input 
+                    [(ngModel)]="purchaserInfo!.registrationDate"
+                    type="date"
+                    label="Registration Date"
+                    placeholder="Select registration date">
+                  </ion-input>
+                </ion-item>
+              </ion-list>
+            </ion-card-content>
+          </ion-card>
+
+          <div class="form-actions">
+            <ion-button expand="block" (click)="savePlot()" [disabled]="!plotForm.plotNumber">
+              Update Plot
+            </ion-button>
+            <ion-button expand="block" fill="outline" (click)="closeModal()">
+              Cancel
+            </ion-button>
+          </div>
+        </div>
+      </ion-content>
+    </ng-template>
+  </ion-modal>
+
+</ion-content>
