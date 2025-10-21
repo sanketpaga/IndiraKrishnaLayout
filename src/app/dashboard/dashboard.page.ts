@@ -19,8 +19,7 @@ import {
   IonRefresher,
   IonRefresherContent,
   IonButton,
-  IonProgressBar
-} from '@ionic/angular/standalone';
+  IonProgressBar, IonSpinner } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { 
   homeOutline, 
@@ -45,7 +44,7 @@ import { environment } from '../../environments/environment';
   templateUrl: './dashboard.page.html',
   styleUrls: ['./dashboard.page.scss'],
   standalone: true,
-  imports: [
+  imports: [IonSpinner, 
     CommonModule,
     FormsModule,
     RouterModule,
@@ -117,7 +116,7 @@ export class DashboardPage implements OnInit {
       
       // Show loading toast
       this.toastController.create({
-        message: 'Loading data from Google Sheets...',
+        message: 'Loading data...',
         duration: 2000,
         position: 'bottom',
         color: 'primary'

@@ -1,22 +1,32 @@
-<ion-header [translucent]="true">
+<ion-header>
   <ion-toolbar>
     <ion-title>Payment Management</ion-title>
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
+<ion-content>
   <ion-header collapse="condense">
     <ion-toolbar>
       <ion-title size="large">Payment Management</ion-title>
     </ion-toolbar>
   </ion-header>
 
+  <!-- Loading overlay for initial page load -->
+  <div *ngIf="isPageLoading" class="loading-overlay">
+    <div class="loading-content">
+      <ion-spinner name="circular" color="primary"></ion-spinner>
+      <p>Loading payment data...</p>
+    </div>
+  </div>
+
   <ion-refresher slot="fixed" (ionRefresh)="onRefresh($event)">
     <ion-refresher-content></ion-refresher-content>
   </ion-refresher>
 
-  <!-- Payment Analytics -->
-  <ion-card>
+  <!-- Main content - show with blur effect when loading -->
+  <div class="main-content" [class.loading-blur]="isPageLoading">
+    <!-- Payment Analytics -->
+    <ion-card>
     <ion-card-header>
       <ion-card-title>
         <ion-icon name="stats-chart-outline"></ion-icon>
@@ -72,16 +82,16 @@
     <div class="filter-section">
       <ion-segment [(ngModel)]="selectedSurvey" (ngModelChange)="onSurveyFilter($event)">
         <ion-segment-button value="all">
-          <ion-label>All Surveys</ion-label>
+          <ion-label>All</ion-label>
         </ion-segment-button>
         <ion-segment-button value="152/1">
-          <ion-label>152/1 (Bapurao)</ion-label>
+          <ion-label>152/1</ion-label>
         </ion-segment-button>
         <ion-segment-button value="152/2">
-          <ion-label>152/2 (Narayanrao)</ion-label>
+          <ion-label>152/2</ion-label>
         </ion-segment-button>
         <ion-segment-button value="152/3">
-          <ion-label>152/3 (Shared)</ion-label>
+          <ion-label>152/3</ion-label>
         </ion-segment-button>
       </ion-segment>
     </div>
@@ -163,6 +173,8 @@
       </ion-card-content>
     </ion-card>
   </div>
+  
+  </div> <!-- End main-content -->
 
   <!-- Payment Modal -->
   <ion-modal [isOpen]="isPaymentModalOpen" (willDismiss)="closePaymentModal()">
@@ -177,7 +189,15 @@
       </ion-header>
       
       <ion-content>
-        <div class="form-content" *ngIf="selectedPlot">
+        <!-- Loading overlay -->
+        <div *ngIf="isModalLoading" class="loading-overlay">
+          <div class="loading-content">
+            <ion-spinner name="circular" color="primary"></ion-spinner>
+            <p>Loading latest payment data...</p>
+          </div>
+        </div>
+        
+        <div class="form-content" *ngIf="selectedPlot" [class.loading-blur]="isModalLoading">
           <ion-card>
             <ion-card-header>
               <ion-card-title>Plot Information</ion-card-title>
@@ -289,10 +309,12 @@
           </ion-card>
 
           <div class="form-actions">
-            <ion-button expand="block" (click)="savePayment()" [disabled]="!paymentForm.amount || paymentForm.amount <= 0">
-              {{ isEditMode ? 'Update Payment' : 'Record Payment' }}
+            <ion-button expand="block" (click)="savePayment()" [disabled]="!paymentForm.amount || paymentForm.amount <= 0 || isPaymentSaving">
+              <ion-spinner *ngIf="isPaymentSaving" name="circular" size="small"></ion-spinner>
+              <span *ngIf="!isPaymentSaving">{{ isEditMode ? 'Update Payment' : 'Record Payment' }}</span>
+              <span *ngIf="isPaymentSaving">{{ isEditMode ? 'Updating...' : 'Recording...' }}</span>
             </ion-button>
-            <ion-button expand="block" fill="outline" (click)="closePaymentModal()">
+            <ion-button expand="block" fill="outline" (click)="closePaymentModal()" [disabled]="isPaymentSaving">
               Cancel
             </ion-button>
           </div>
@@ -367,11 +389,12 @@
               </ion-list>
 
               <div class="receipt-actions">
-                <ion-button expand="block" (click)="downloadReceipt(selectedPayment)">
-                  <ion-icon name="download-outline" slot="start"></ion-icon>
-                  Download
+                <ion-button expand="block" (click)="downloadReceipt(selectedPayment)" [disabled]="isPdfGenerating">
+                  <ion-spinner *ngIf="isPdfGenerating" name="circular" size="small" slot="start"></ion-spinner>
+                  <ion-icon *ngIf="!isPdfGenerating" name="download-outline" slot="start"></ion-icon>
+                  {{ isPdfGenerating ? 'Generating...' : 'Download' }}
                 </ion-button>
-                <ion-button expand="block" fill="outline" (click)="printReceipt(selectedPayment)">
+                <ion-button expand="block" fill="outline" (click)="printReceipt(selectedPayment)" [disabled]="isPdfGenerating">
                   <ion-icon name="print-outline" slot="start"></ion-icon>
                   Print
                 </ion-button>

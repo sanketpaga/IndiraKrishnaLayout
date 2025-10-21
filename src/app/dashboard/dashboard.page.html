@@ -1,10 +1,10 @@
-<ion-header [translucent]="true">
+<ion-header>
   <ion-toolbar>
     <ion-title>Indira Krishna Layout</ion-title>
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
+<ion-content>
   <ion-header collapse="condense">
     <ion-toolbar>
       <ion-title size="large">Indira Krishna Layout</ion-title>
@@ -15,8 +15,12 @@
     <ion-refresher-content></ion-refresher-content>
   </ion-refresher>
 
-  <div *ngIf="loading" class="loading-container">
-    <ion-progress-bar type="indeterminate"></ion-progress-bar>
+  <!-- Loading overlay for initial page load -->
+  <div *ngIf="loading" class="loading-overlay">
+    <div class="loading-content">
+      <ion-spinner name="circular" color="primary"></ion-spinner>
+      <p>Loading dashboard...</p>
+    </div>
   </div>
 
   <div *ngIf="!loading && dashboardStats" class="dashboard-content">
@@ -162,12 +166,12 @@
                       Refresh
                     </ion-button>
                   </ion-col>
-                  <ion-col size="6" size-md="3">
+                  <!-- <ion-col size="6" size-md="3">
                     <ion-button expand="block" fill="outline" color="secondary" [routerLink]="['/admin']">
                       <ion-icon name="settings" slot="start"></ion-icon>
                       Admin Panel
                     </ion-button>
-                  </ion-col>
+                  </ion-col> -->
                 </ion-row>
               </ion-grid>
             </ion-card-content>

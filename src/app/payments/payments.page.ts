@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import jsPDF from 'jspdf';
@@ -33,11 +33,13 @@ import {
   IonRefresherContent,
   IonAccordion,
   IonAccordionGroup,
-  IonProgressBar
+  IonProgressBar,
+  IonSpinner
 } from '@ionic/angular/standalone';
 import { PlotService } from '../services/plot.service';
 import { PaymentService } from '../services/payment.service';
 import { Plot, Payment, PaymentMode, PaymentStatus } from '../models/plot.model';
+import { Subscription } from 'rxjs';
 import { addIcons } from 'ionicons';
 import { 
   searchOutline, 
@@ -106,14 +108,25 @@ interface PaymentFormData {
   IonRefresherContent,
   IonAccordion,
     IonAccordionGroup,
-    IonProgressBar
+    IonProgressBar,
+    IonSpinner
   ]
 })
-export class PaymentsPage implements OnInit {
+export class PaymentsPage implements OnInit, OnDestroy {
   plots: Plot[] = [];
   filteredPlots: Plot[] = [];
   allPayments: Payment[] = [];
   filteredPayments: Payment[] = [];
+  
+  // Subscription management
+  private plotsSubscription: Subscription | null = null;
+  
+  // Loading states
+  isPageLoading = true;
+  isPaymentSaving = false;
+  isPdfGenerating = false;
+  isRefreshing = false;
+  isModalLoading = false;
   
   // Search and filter
   searchTerm: string = '';
@@ -158,33 +171,63 @@ export class PaymentsPage implements OnInit {
   }
 
   loadData() {
-    // Load plots with payments
-    this.plotService.getAllPlots().subscribe(plots => {
-      console.log('All plots from service:', plots.length);
-      
-      // Show all SOLD and PRE_BOOKED plots (even without purchaser assigned)
-      this.plots = plots.filter(plot => plot.status === 'SOLD' || plot.status === 'PRE_BOOKED');
-      console.log('SOLD/PRE_BOOKED plots:', this.plots.length);
-      
-      // Debug payment data for each plot
-      this.plots.forEach(plot => {
-        console.log(`Plot ${plot.id} (${plot.plotNumber}):`, {
-          status: plot.status,
-          paymentsCount: plot.payments.length,
-          payments: plot.payments
+    this.isPageLoading = true;
+    console.log('Loading payment data started - should show progress bar');
+    
+    // Subscribe to the plots observable to get real-time updates
+    this.plotsSubscription = this.plotService.plots$.subscribe({
+      next: (plots) => {
+        console.log('Plots received for payments:', plots.length);
+        
+        // Don't hide loading immediately on first empty response
+        // Wait for actual data from Google Sheets
+        if (plots.length === 0) {
+          console.log('Empty plots response - keeping progress bar visible for Google Sheets loading');
+          return;
+        }
+        
+        // Show all SOLD and PRE_BOOKED plots (even without purchaser assigned)
+        this.plots = plots.filter(plot => plot.status === 'SOLD' || plot.status === 'PRE_BOOKED');
+        console.log('SOLD/PRE_BOOKED plots:', this.plots.length);
+        
+        // Debug payment data for each plot
+        this.plots.forEach(plot => {
+          console.log(`Plot ${plot.id} (${plot.plotNumber}):`, {
+            status: plot.status,
+            paymentsCount: plot.payments.length,
+            payments: plot.payments
+          });
         });
-      });
-      
-      this.filteredPlots = [...this.plots];
-      this.extractAllPayments();
-      this.calculateAnalytics();
-      this.applyFilters();
-      
-      console.log('Filtered plots after applyFilters:', this.filteredPlots.length);
+        
+        this.filteredPlots = [...this.plots];
+        this.extractAllPayments();
+        this.calculateAnalytics();
+        this.applyFilters();
+        
+        console.log('Filtered plots after applyFilters:', this.filteredPlots.length);
+        
+        // Hide loading when we have actual data from Google Sheets
+        setTimeout(() => {
+          this.isPageLoading = false;
+          console.log('Payment data loading completed - progress bar should hide');
+        }, 500);
+      },
+      error: (error) => {
+        console.error('Error loading payment data:', error);
+        this.isPageLoading = false;
+      }
     });
+
+    // Fallback timeout to hide loading if Google Sheets takes too long
+    setTimeout(() => {
+      if (this.isPageLoading) {
+        this.isPageLoading = false;
+        console.log('Payment loading fallback timeout - progress bar should hide');
+      }
+    }, 10000); // 10 second fallback timeout
   }
 
-  extractAllPayments() {
+extractAllPayments() {
     this.allPayments = [];
     this.plots.forEach(plot => {
       plot.payments.forEach(payment => {
@@ -235,9 +278,11 @@ export class PaymentsPage implements OnInit {
   }
 
   onRefresh(event: any) {
+    this.isRefreshing = true;
     this.loadData();
     setTimeout(() => {
       event.target.complete();
+      this.isRefreshing = false;
     }, 1000);
   }
 
@@ -280,6 +325,9 @@ export class PaymentsPage implements OnInit {
 
   openPaymentModal(plot: Plot) {
     this.selectedPlot = plot;
+    this.isEditMode = false;
+    this.isModalLoading = false; // No loading for new payments
+    
     const currentDate = new Date();
     this.paymentForm = {
       plotId: plot.id,
@@ -301,6 +349,8 @@ export class PaymentsPage implements OnInit {
 
   savePayment() {
     if (this.selectedPlot && this.paymentForm.amount > 0 && this.paymentForm.date) {
+      this.isPaymentSaving = true;
+      
       // Validate and convert date
       let paymentDate: Date;
       try {
@@ -313,42 +363,48 @@ export class PaymentsPage implements OnInit {
         paymentDate = new Date(); // fallback to current date
       }
 
-      if (this.isEditMode && this.selectedPayment) {
-        // Update existing payment
-        const updatedPayment: Payment = {
-          ...this.selectedPayment,
-          amount: this.paymentForm.amount,
-          date: paymentDate,
-          mode: this.paymentForm.mode,
-          description: this.paymentForm.description,
-          receiptNumber: this.paymentForm.receiptNumber
-        };
+      try {
+        if (this.isEditMode && this.selectedPayment) {
+          // Update existing payment
+          const updatedPayment: Payment = {
+            ...this.selectedPayment,
+            amount: this.paymentForm.amount,
+            date: paymentDate,
+            mode: this.paymentForm.mode,
+            description: this.paymentForm.description,
+            receiptNumber: this.paymentForm.receiptNumber
+          };
 
-        this.updatePaymentInPlot(this.selectedPlot, updatedPayment);
-      } else {
-        // Create new payment
-        const newPayment: Payment = {
-          id: 'payment-' + Date.now(),
-          amount: this.paymentForm.amount,
-          date: paymentDate,
-          mode: this.paymentForm.mode,
-          description: this.paymentForm.description,
-          receiptNumber: this.paymentForm.receiptNumber,
-          plotNumber: this.selectedPlot.plotNumber,
-          surveyNumber: this.selectedPlot.surveyNumber,
-          customerName: this.selectedPlot.purchaser?.name || ''
-        };
+          this.updatePaymentInPlot(this.selectedPlot, updatedPayment);
+        } else {
+          // Create new payment
+          const newPayment: Payment = {
+            id: 'payment-' + Date.now(),
+            amount: this.paymentForm.amount,
+            date: paymentDate,
+            mode: this.paymentForm.mode,
+            description: this.paymentForm.description,
+            receiptNumber: this.paymentForm.receiptNumber,
+            plotNumber: this.selectedPlot.plotNumber,
+            surveyNumber: this.selectedPlot.surveyNumber,
+            customerName: this.selectedPlot.purchaser?.name || ''
+          };
 
-        console.log('Adding new payment:', newPayment);
-        console.log('To plot:', this.selectedPlot.id);
+          console.log('Adding new payment:', newPayment);
+          console.log('To plot:', this.selectedPlot.id);
+          
+          this.paymentService.addPayment(this.selectedPlot.id, newPayment);
+          
+          console.log('Plot after adding payment:', this.selectedPlot);
+        }
         
-        this.paymentService.addPayment(this.selectedPlot.id, newPayment);
-        
-        console.log('Plot after adding payment:', this.selectedPlot);
+        this.closePaymentModal();
+        this.loadData(); // Refresh data
+      } catch (error) {
+        console.error('Error saving payment:', error);
+      } finally {
+        this.isPaymentSaving = false;
       }
-      
-      this.closePaymentModal();
-      this.loadData(); // Refresh data
     }
   }
 
@@ -375,7 +431,21 @@ export class PaymentsPage implements OnInit {
     this.selectedPlot = plot;
     this.selectedPayment = payment;
     this.isEditMode = true;
+    this.isPaymentModalOpen = true;
+    this.isModalLoading = true;
     
+    // Initially populate with local data to avoid empty form
+    this.populatePaymentForm(payment, plot);
+    console.log('Initial payment data:', payment);
+    
+    // Simulate loading latest data (you can replace this with actual API call if needed)
+    setTimeout(() => {
+      this.isModalLoading = false;
+      console.log('Payment edit modal loaded');
+    }, 800);
+  }
+
+  private populatePaymentForm(payment: Payment, plot: Plot) {
     // Populate form with existing payment data
     let dateString: string;
     try {
@@ -399,8 +469,6 @@ export class PaymentsPage implements OnInit {
       description: payment.description || '',
       receiptNumber: payment.receiptNumber || ''
     };
-    
-    this.isPaymentModalOpen = true;
   }
 
   updatePaymentInPlot(plot: Plot, updatedPayment: Payment) {
@@ -511,6 +579,8 @@ export class PaymentsPage implements OnInit {
   }
 
   async downloadReceipt(payment: Payment) {
+    this.isPdfGenerating = true;
+    
     try {
       // Create a temporary div with the receipt content
       const receiptElement = this.createReceiptElement(payment);
@@ -563,6 +633,8 @@ export class PaymentsPage implements OnInit {
       console.error('Error generating PDF:', error);
       // Fallback to basic browser print dialog
       this.printReceiptFallback(payment);
+    } finally {
+      this.isPdfGenerating = false;
     }
   }
 
@@ -660,5 +732,11 @@ export class PaymentsPage implements OnInit {
 
   trackByPlot(index: number, plot: Plot): string {
     return plot.id;
+  }
+
+  ngOnDestroy() {
+    if (this.plotsSubscription) {
+      this.plotsSubscription.unsubscribe();
+    }
   }
 }

@@ -10,6 +10,10 @@
       "launchShowDuration": 2000,
       "backgroundColor": "#3880ff",
       "showSpinner": false
+    },
+    "StatusBar": {
+      "style": "Dark",
+      "backgroundColor": "#3880ff"
     }
   }
 }

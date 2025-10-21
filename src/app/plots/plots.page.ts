@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { 
@@ -36,6 +36,7 @@ import {
 } from '@ionic/angular/standalone';
 import { PlotService } from '../services/plot.service';
 import { Plot, PlotStatus, SurveyNumber, OwnerType, Purchaser } from '../models/plot.model';
+import { Subscription } from 'rxjs';
 import { addIcons } from 'ionicons';
 import { 
   searchOutline, 
@@ -92,11 +93,19 @@ import {
     IonSpinner
   ]
 })
-export class PlotsPage implements OnInit {
+export class PlotsPage implements OnInit, OnDestroy {
   plots: Plot[] = [];
   filteredPlots: Plot[] = [];
+  
+  // Subscription management
+  private plotsSubscription: Subscription | null = null;
+  
+  // Search and filter
   searchTerm: string = '';
   selectedSurvey: string = 'all';
+  
+  // Loading states
+  loading = true;
   
   // Expose enums to template
   PlotStatus = PlotStatus;
@@ -137,12 +146,56 @@ export class PlotsPage implements OnInit {
     this.loadPlots();
   }
 
+  ngOnDestroy() {
+    if (this.plotsSubscription) {
+      this.plotsSubscription.unsubscribe();
+    }
+  }
+
   loadPlots() {
-    this.plotService.getAllPlots().subscribe(plots => {
-      this.plots = plots;
-      this.filteredPlots = [...plots]; // Initialize filteredPlots
-      this.applyFilters();
+    this.loading = true;
+    console.log('Loading plots started - should show progress bar');
+    
+    // Unsubscribe from previous subscription if it exists
+    if (this.plotsSubscription) {
+      this.plotsSubscription.unsubscribe();
+    }
+    
+    // Subscribe to the plots observable to get real-time updates
+    this.plotsSubscription = this.plotService.plots$.subscribe({
+      next: (plots) => {
+        console.log('Plots received from plots$ observable:', plots.length);
+        
+        // Don't hide loading immediately on first empty response
+        // Wait for actual data from Google Sheets
+        if (plots.length === 0) {
+          console.log('Empty plots response - keeping progress bar visible for Google Sheets loading');
+          return;
+        }
+        
+        this.plots = plots;
+        this.filteredPlots = [...plots]; // Initialize filteredPlots
+        this.applyFilters();
+        
+        // Hide loading when we have actual data from Google Sheets
+        setTimeout(() => {
+          this.loading = false;
+          console.log('Loading completed with data - progress bar should hide');
+        }, 500);
+      },
+      error: (error) => {
+        console.error('Error loading plots:', error);
+        this.loading = false;
+      }
     });
+
+    // Fallback timeout to hide loading if Google Sheets takes too long
+    setTimeout(() => {
+      if (this.loading) {
+        this.loading = false;
+        console.log('Loading fallback timeout - progress bar should hide');
+      }
+    }, 10000); // 10 second fallback timeout
   }
 
   onRefresh(event: any) {
@@ -262,6 +315,25 @@ export class PlotsPage implements OnInit {
     // Ensure dimensions are valid, provide defaults if needed
     const dimensions = plot.dimensions || { length: 0, width: 0, area: 0 };
     
+    // Convert purchaser data and handle date formatting
+    let purchaserData = null;
+    if (plot.purchaser) {
+      purchaserData = { ...plot.purchaser };
+      
+      // Convert registration date to string format for date input
+      if (purchaserData.registrationDate) {
+        if (purchaserData.registrationDate instanceof Date) {
+          (purchaserData as any).registrationDate = purchaserData.registrationDate.toISOString().split('T')[0];
+        } else if (typeof purchaserData.registrationDate === 'string') {
+          // Parse and reformat to ensure YYYY-MM-DD format
+          const date = new Date(purchaserData.registrationDate);
+          if (!isNaN(date.getTime())) {
+            (purchaserData as any).registrationDate = date.toISOString().split('T')[0];
+          }
+        }
+      }
+    }
+    
     this.plotForm = {
       surveyNumber: plot.surveyNumber,
       plotNumber: plot.plotNumber,
@@ -275,10 +347,11 @@ export class PlotsPage implements OnInit {
       ratePerSqMeter: plot.ratePerSqMeter,
       totalCost: plot.totalCost,
       governmentRate: plot.governmentRate,
-      purchaser: plot.purchaser ? { ...plot.purchaser } : null
+      purchaser: purchaserData
     };
     
     console.log('Form populated with dimensions:', this.plotForm.dimensions);
+    console.log('Form populated with purchaser:', this.plotForm.purchaser);
   }
 
   calculateArea() {
@@ -320,11 +393,21 @@ export class PlotsPage implements OnInit {
     }
 
     if (this.isEditMode && this.selectedPlot) {
+      // Prepare purchaser data with proper date conversion
+      let purchaserData = this.plotForm.purchaser;
+      if (purchaserData && purchaserData.registrationDate) {
+        // Convert string date back to Date object for saving
+        purchaserData = {
+          ...purchaserData,
+          registrationDate: new Date(purchaserData.registrationDate as unknown as string)
+        };
+      }
+      
       // Update existing plot
       const updatedPlot: Plot = {
         ...this.selectedPlot,
         ...this.plotForm,
-        purchaser: this.plotForm.purchaser || undefined,
+        purchaser: purchaserData || undefined,
         updatedAt: new Date()
       };
       
@@ -446,7 +529,7 @@ export class PlotsPage implements OnInit {
         mobile: '',
         email: '',
         address: '',
-        registrationDate: new Date()
+        registrationDate: new Date().toISOString().split('T')[0] as any // Format as YYYY-MM-DD for input
       };
     } else if (this.plotForm.status === PlotStatus.AVAILABLE) {
       // Clear purchaser when status is AVAILABLE
@@ -462,7 +545,7 @@ export class PlotsPage implements OnInit {
         mobile: '',
         email: '',
         address: '',
-        registrationDate: new Date()
+        registrationDate: new Date().toISOString().split('T')[0] as any // Format as YYYY-MM-DD for input
       };
     }
     return this.plotForm.purchaser;

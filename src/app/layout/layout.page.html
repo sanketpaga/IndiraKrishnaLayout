@@ -1,10 +1,10 @@
-<ion-header [translucent]="true">
+<ion-header>
   <ion-toolbar>
     <ion-title>Indira Krishna Layout - Plot View</ion-title>
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
+<ion-content>
   <ion-header collapse="condense">
     <ion-toolbar>
       <ion-title size="large">Layout View</ion-title>
@@ -15,13 +15,13 @@
   <div class="survey-selector">
     <ion-segment [(ngModel)]="selectedSurvey" (ionChange)="onSurveyChange($event)">
       <ion-segment-button value="152/1">
-        <ion-label>Survey 152/1</ion-label>
+        <ion-label>152/1</ion-label>
       </ion-segment-button>
       <ion-segment-button value="152/2">
-        <ion-label>Survey 152/2</ion-label>
+        <ion-label>152/2</ion-label>
       </ion-segment-button>
       <ion-segment-button value="152/3">
-        <ion-label>Survey 152/3</ion-label>
+        <ion-label>152/3</ion-label>
       </ion-segment-button>
     </ion-segment>
   </div>
