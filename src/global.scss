@@ -37,41 +37,14 @@
 @import '@ionic/angular/css/palettes/dark.system.css';
 
 /* 
- * Mobile Status Bar Safe Area Fix
+ * Minor mobile header adjustment
  * -----------------------------------------------------
- * Prevents header titles from being overlapped by status bar
- * on mobile devices (time, battery, signal icons)
+ * Small padding adjustment to prevent minor overlap on some devices
  */
 
-/* Ensure headers respect the status bar safe area */
-ion-header {
-  &.header-translucent {
-    ion-toolbar {
-      padding-top: env(safe-area-inset-top);
-    }
-  }
-}
-
-/* Alternative: Add padding to all toolbars when translucent */
-ion-header[translucent="true"] {
-  ion-toolbar {
-    padding-top: env(safe-area-inset-top);
-    min-height: calc(44px + env(safe-area-inset-top));
-  }
-}
-
-/* Ensure content doesn't get cut off behind headers */
-ion-content[fullscreen="true"] {
-  padding-top: env(safe-area-inset-top);
-}
-
-/* For iOS devices - additional safe area handling */
-@supports (padding: max(0px)) {
+/* Add small padding to prevent status bar overlap on mobile */
+@media (max-width: 768px) {
   ion-header[translucent="true"] ion-toolbar {
-    padding-top: max(env(safe-area-inset-top), 20px);
-  }
-  
-  ion-content[fullscreen="true"] {
-    padding-top: max(env(safe-area-inset-top), 20px);
+    padding-top: 8px;
   }
 }
