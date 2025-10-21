@@ -45,6 +45,6 @@
 /* Add small padding to prevent status bar overlap on mobile */
 @media (max-width: 768px) {
   ion-header[translucent="true"] ion-toolbar {
-    padding-top: 8px;
+    padding-top: 15px;
   }
 }
