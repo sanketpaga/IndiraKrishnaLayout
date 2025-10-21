@@ -167,7 +167,10 @@ export class PaymentsPage implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    this.loadData();
+    // Load data asynchronously to avoid blocking navigation
+    setTimeout(() => {
+      this.loadData();
+    }, 100);
   }
 
   loadData() {

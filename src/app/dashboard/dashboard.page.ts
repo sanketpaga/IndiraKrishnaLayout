@@ -35,7 +35,7 @@ import {
   settings
 } from 'ionicons/icons';
 import { PlotService } from '../services/plot.service';
-import { DashboardStats, SurveySummary } from '../models/plot.model';
+import { DashboardStats, SurveySummary, Plot, PlotStatus, SurveyNumber } from '../models/plot.model';
 import { ToastController } from '@ionic/angular';
 import { environment } from '../../environments/environment';
 
@@ -96,90 +96,113 @@ export class DashboardPage implements OnInit {
       console.log('Google Sheets Web App URL detected, auto-enabling integration');
       this.isGoogleSheetsEnabled = true;
       this.plotService.enableGoogleSheets();
-      
-      // Wait a moment for Google Sheets data to load, then load dashboard
-      setTimeout(() => {
-        this.loadDashboardData();
-      }, 1000);
-    } else {
-      // Load dashboard data immediately if no Google Sheets
-      this.loadDashboardData();
     }
+    
+    // Always load dashboard data immediately
+    this.loadDashboardData();
   }
 
   loadDashboardData() {
     this.loading = true;
+    console.log('Dashboard loading started - loading state:', this.loading);
     
-    // If Google Sheets is enabled, ensure we have the latest data
-    if (this.isGoogleSheetsEnabled) {
-      console.log('Refreshing data from Google Sheets...');
-      
-      // Show loading toast
-      this.toastController.create({
-        message: 'Loading data...',
-        duration: 2000,
-        position: 'bottom',
-        color: 'primary'
-      }).then(toast => toast.present());
-      
-      this.plotService.enableGoogleSheets(); // This will reload from Google Sheets
-      
-      // Subscribe to plot changes to wait for actual data load
-      const subscription = this.plotService.getAllPlots().subscribe({
+    // Add a small delay to ensure spinner shows before data processing
+    setTimeout(() => {
+      // Simply subscribe to the plots observable and calculate dashboard stats from it
+      this.plotService.plots$.subscribe({
         next: (plots) => {
-          console.log(`Received ${plots.length} plots from PlotService`);
-          if (plots.length > 0) {
-            // Data is loaded, now get dashboard stats
-            subscription.unsubscribe();
-            this.getDashboardStats();
+          console.log(`Dashboard received ${plots.length} plots`);
+          
+          // Calculate dashboard stats from plots data
+          this.calculateDashboardStatsFromPlots(plots);
+          
+          // Only hide spinner if we have data OR if Google Sheets is disabled
+          // This prevents hiding spinner on initial empty response when Google Sheets is still loading
+          if (plots.length > 0 || !this.isGoogleSheetsEnabled) {
+            this.loading = false;
+            console.log('Dashboard loading completed - loading state:', this.loading);
+          } else {
+            console.log('Still waiting for Google Sheets data...');
           }
         },
         error: (error) => {
-          console.error('Error loading plots:', error);
-          subscription.unsubscribe();
-          this.getDashboardStats();
+          console.error('Error loading dashboard data:', error);
+          this.loading = false;
+        }
+      });
+    }, 100);
+  }
+
+  private calculateDashboardStatsFromPlots(plots: Plot[]) {
+    // Calculate stats directly from plots array
+    const totalPlots = plots.length;
+    const soldPlots = plots.filter(p => p.status === PlotStatus.SOLD).length;
+    const preBookedPlots = plots.filter(p => p.status === PlotStatus.PRE_BOOKED).length;
+    const availablePlots = plots.filter(p => p.status === PlotStatus.AVAILABLE).length;
+    
+    let totalRevenue = 0;
+    let pendingAmount = 0;
+    
+    plots.forEach(plot => {
+      if (plot.status === PlotStatus.SOLD || plot.status === PlotStatus.PRE_BOOKED) {
+        const totalPaid = plot.payments.reduce((sum, payment) => sum + payment.amount, 0);
+        totalRevenue += totalPaid;
+        pendingAmount += Math.max(0, plot.totalCost - totalPaid);
+      }
+    });
+    
+    // Group by survey
+    const surveyGroups: { [key: string]: Plot[] } = {};
+    plots.forEach(plot => {
+      if (!surveyGroups[plot.surveyNumber]) {
+        surveyGroups[plot.surveyNumber] = [];
+      }
+      surveyGroups[plot.surveyNumber].push(plot);
+    });
+    
+    const surveySummaries = Object.keys(surveyGroups).map(surveyKey => {
+      const surveyPlots = surveyGroups[surveyKey];
+      const surveyTotalPlots = surveyPlots.length;
+      const surveySoldPlots = surveyPlots.filter(p => p.status === PlotStatus.SOLD).length;
+      const surveyPreBookedPlots = surveyPlots.filter(p => p.status === PlotStatus.PRE_BOOKED).length;
+      const surveyAvailablePlots = surveyPlots.filter(p => p.status === PlotStatus.AVAILABLE).length;
+      
+      let surveyTotalRevenue = 0;
+      let surveyPendingAmount = 0;
+      let surveyTotalArea = 0;
+      
+      surveyPlots.forEach(plot => {
+        surveyTotalArea += plot.dimensions.area;
+        if (plot.status === PlotStatus.SOLD || plot.status === PlotStatus.PRE_BOOKED) {
+          const totalPaid = plot.payments.reduce((sum, payment) => sum + payment.amount, 0);
+          surveyTotalRevenue += totalPaid;
+          surveyPendingAmount += Math.max(0, plot.totalCost - totalPaid);
         }
       });
       
-      // Fallback timeout in case data doesn't load
-      setTimeout(() => {
-        subscription.unsubscribe();
-        this.getDashboardStats();
-      }, 5000);
-    } else {
-      this.getDashboardStats();
-    }
-  }
-
-  private getDashboardStats() {
-    this.plotService.getDashboardStats().subscribe({
-      next: (stats) => {
-        this.dashboardStats = stats;
-        this.loading = false;
-        console.log('Dashboard stats loaded:', stats);
-        
-        if (stats.totalPlots === 0 && this.isGoogleSheetsEnabled) {
-          // Show a message if no plots are found but Google Sheets is enabled
-          this.toastController.create({
-            message: 'No plots found in Google Sheets. Use Admin Panel to load data.',
-            duration: 4000,
-            position: 'bottom',
-            color: 'warning'
-          }).then(toast => toast.present());
-        }
-      },
-      error: (error) => {
-        console.error('Error loading dashboard data:', error);
-        this.loading = false;
-        
-        this.toastController.create({
-          message: 'Error loading data. Check console for details.',
-          duration: 3000,
-          position: 'bottom',
-          color: 'danger'
-        }).then(toast => toast.present());
-      }
+      return {
+        surveyNumber: surveyKey as SurveyNumber,
+        totalPlots: surveyTotalPlots,
+        soldPlots: surveySoldPlots,
+        preBookedPlots: surveyPreBookedPlots,
+        availablePlots: surveyAvailablePlots,
+        totalRevenue: surveyTotalRevenue,
+        pendingAmount: surveyPendingAmount,
+        totalArea: surveyTotalArea,
+        soldArea: surveyPlots.filter(p => p.status === PlotStatus.SOLD)
+          .reduce((sum: number, plot) => sum + plot.dimensions.area, 0)
+      };
     });
+    
+    this.dashboardStats = {
+      totalPlots,
+      totalSoldPlots: soldPlots,
+      totalRevenue,
+      pendingAmount,
+      surveySummaries
+    };
+    
+    console.log('Dashboard stats calculated:', this.dashboardStats);
   }
 
   onRefresh(event: any) {

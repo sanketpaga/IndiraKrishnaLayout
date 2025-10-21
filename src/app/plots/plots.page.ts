@@ -37,6 +37,7 @@ import {
 import { PlotService } from '../services/plot.service';
 import { Plot, PlotStatus, SurveyNumber, OwnerType, Purchaser } from '../models/plot.model';
 import { Subscription } from 'rxjs';
+import { environment } from '../../environments/environment';
 import { addIcons } from 'ionicons';
 import { 
   searchOutline, 
@@ -107,6 +108,9 @@ export class PlotsPage implements OnInit, OnDestroy {
   // Loading states
   loading = true;
   
+  // Google Sheets integration state
+  isGoogleSheetsEnabled = false;
+  
   // Expose enums to template
   PlotStatus = PlotStatus;
   SurveyNumber = SurveyNumber;
@@ -143,7 +147,16 @@ export class PlotsPage implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    this.loadPlots();
+    // Check if Google Sheets is enabled
+    if (environment.googleSheets?.webAppUrl) {
+      console.log('Google Sheets Web App URL detected in plots page');
+      this.isGoogleSheetsEnabled = true;
+    }
+    
+    // Load plots asynchronously to avoid blocking navigation
+    setTimeout(() => {
+      this.loadPlots();
+    }, 100);
   }
 
   ngOnDestroy() {
@@ -166,36 +179,24 @@ export class PlotsPage implements OnInit, OnDestroy {
       next: (plots) => {
         console.log('Plots received from plots$ observable:', plots.length);
         
-        // Don't hide loading immediately on first empty response
-        // Wait for actual data from Google Sheets
-        if (plots.length === 0) {
-          console.log('Empty plots response - keeping progress bar visible for Google Sheets loading');
-          return;
-        }
-        
         this.plots = plots;
-        this.filteredPlots = [...plots]; // Initialize filteredPlots
+        this.filteredPlots = [...plots];
         this.applyFilters();
         
-        // Hide loading when we have actual data from Google Sheets
-        setTimeout(() => {
+        // Only hide loading if we have data OR if Google Sheets is disabled
+        // This prevents hiding loading on initial empty response when Google Sheets is still loading
+        if (plots.length > 0 || !this.isGoogleSheetsEnabled) {
           this.loading = false;
-          console.log('Loading completed with data - progress bar should hide');
-        }, 500);
+          console.log('Loading completed - progress bar should hide');
+        } else {
+          console.log('Still waiting for Google Sheets data in plots...');
+        }
       },
       error: (error) => {
         console.error('Error loading plots:', error);
         this.loading = false;
       }
     });
-
-    // Fallback timeout to hide loading if Google Sheets takes too long
-    setTimeout(() => {
-      if (this.loading) {
-        this.loading = false;
-        console.log('Loading fallback timeout - progress bar should hide');
-      }
-    }, 10000); // 10 second fallback timeout
   }
 
   onRefresh(event: any) {

@@ -23,6 +23,17 @@ android {
         }
     }
     
+    // Custom APK naming
+    applicationVariants.all { variant ->
+        variant.outputs.all {
+            if (variant.buildType.name == 'release') {
+                outputFileName = "IndiraKrishna-${variant.versionName}.apk"
+            } else if (variant.buildType.name == 'debug') {
+                outputFileName = "IndiraKrishna-debug-${variant.versionName}.apk"
+            }
+        }
+    }
+    
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17

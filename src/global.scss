@@ -37,14 +37,12 @@
 @import '@ionic/angular/css/palettes/dark.system.css';
 
 /* 
- * Minor mobile header adjustment
+ * Status Bar Spacing Fix
  * -----------------------------------------------------
- * Small padding adjustment to prevent minor overlap on some devices
+ * Small adjustment to ensure proper spacing with status bar
  */
 
-/* Add small padding to prevent status bar overlap on mobile */
-@media (max-width: 768px) {
-  ion-header[translucent="true"] ion-toolbar {
-    padding-top: 15px;
-  }
+/* Add minimal top padding on mobile to prevent any edge case overlap */
+ion-header ion-toolbar {
+  padding-top: env(safe-area-inset-top, 0px);
 }
