@@ -141,26 +141,48 @@
               </ion-label>
             </ion-item>
             <div class="ion-padding" slot="content">
-              <ion-list>
-                <ion-item *ngFor="let payment of plot.payments; trackBy: trackByPayment" lines="none" 
-                         [class.editing-payment]="isEditMode && selectedPayment?.id === payment.id">
-                  <ion-icon [name]="getMethodIcon(payment.mode)" slot="start" [color]="'medium'"></ion-icon>
-                  <ion-label>
-                    <h3>{{ formatCurrency(payment.amount) }}</h3>
-                    <p>{{ formatDate(payment.date) }} • {{ payment.mode }}</p>
-                    <p *ngIf="payment.description"><small>{{ payment.description }}</small></p>
-                  </ion-label>
-                  <ion-button fill="clear" slot="end" (click)="editPayment(payment, plot)">
-                    <ion-icon name="create-outline"></ion-icon>
-                  </ion-button>
-                  <ion-button fill="clear" slot="end" (click)="deletePayment(payment, plot)" color="danger">
-                    <ion-icon name="trash-outline"></ion-icon>
-                  </ion-button>
-                  <ion-button fill="clear" slot="end" (click)="openReceiptModal(payment)">
-                    <ion-icon name="receipt-outline"></ion-icon>
-                  </ion-button>
-                </ion-item>
-              </ion-list>
+              <!-- Mobile-optimized payment cards -->
+              <div class="payment-history-mobile">
+                <div *ngFor="let payment of plot.payments; trackBy: trackByPayment" 
+                     class="payment-item-mobile"
+                     [class.editing-payment]="isEditMode && selectedPayment?.id === payment.id">
+                  
+                  <!-- Payment amount (prominent) -->
+                  <div class="payment-amount">
+                    {{ formatCurrency(payment.amount) }}
+                  </div>
+                  
+                  <!-- Payment details -->
+                  <div class="payment-details">
+                    <div class="date-method">
+                      <span class="date">{{ formatDate(payment.date) }}</span>
+                      <div class="method-info">
+                        <ion-icon [name]="getMethodIcon(payment.mode)" [color]="'medium'"></ion-icon>
+                        <span class="mode">{{ payment.mode }}</span>
+                      </div>
+                    </div>
+                    <div *ngIf="payment.description" class="description">
+                      {{ payment.description }}
+                    </div>
+                  </div>
+                  
+                  <!-- Action buttons row -->
+                  <div class="payment-actions-mobile">
+                    <ion-button fill="clear" size="small" (click)="openReceiptModal(payment)">
+                      <ion-icon name="receipt-outline"></ion-icon>
+                      <span>Receipt</span>
+                    </ion-button>
+                    <ion-button fill="clear" size="small" (click)="editPayment(payment, plot)">
+                      <ion-icon name="create-outline"></ion-icon>
+                      <span>Edit</span>
+                    </ion-button>
+                    <ion-button fill="clear" size="small" (click)="deletePayment(payment, plot)" color="danger">
+                      <ion-icon name="trash-outline"></ion-icon>
+                      <span>Delete</span>
+                    </ion-button>
+                  </div>
+                </div>
+              </div>
             </div>
           </ion-accordion>
         </ion-accordion-group>
