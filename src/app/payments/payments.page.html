@@ -81,9 +81,6 @@
     <!-- Survey Filter -->
     <div class="filter-section">
       <ion-segment [(ngModel)]="selectedSurvey" (ngModelChange)="onSurveyFilter($event)">
-        <ion-segment-button value="all">
-          <ion-label>All</ion-label>
-        </ion-segment-button>
         <ion-segment-button value="152/1">
           <ion-label>152/1</ion-label>
         </ion-segment-button>
@@ -97,9 +94,17 @@
     </div>
   </div>
 
+  <!-- Performance notice for large datasets -->
+  <div *ngIf="selectedSurvey === '152/3' && filteredPlots.length > 50" class="performance-notice" style="padding: 16px;">
+    <ion-chip color="warning">
+      <ion-icon name="speedometer-outline"></ion-icon>
+      <ion-label>Large Dataset: {{ filteredPlots.length }} plots - Using pagination for better performance</ion-label>
+    </ion-chip>
+  </div>
+
   <!-- Payment List -->
   <div class="payment-list">
-    <ion-card *ngFor="let plot of filteredPlots; trackBy: trackByPlot" class="payment-card">
+    <ion-card *ngFor="let plot of displayedPlots; trackBy: trackByPlot" class="payment-card">
       <ion-card-header>
         <div class="payment-header">
           <div class="plot-info">
@@ -195,6 +200,34 @@
       </ion-card-content>
     </ion-card>
   </div>
+  
+  <!-- Pagination Controls for Large Datasets -->
+  <ion-card *ngIf="Math.max(totalPages, totalPaymentPages) > 1" class="pagination-card">
+    <ion-card-content>
+      <div class="pagination-controls">
+        <div class="pagination-info">
+          <p>Showing {{ (currentPage - 1) * itemsPerPage + 1 }}-{{ Math.min(currentPage * itemsPerPage, Math.max(filteredPlots.length, filteredPayments.length)) }} of {{ Math.max(filteredPlots.length, filteredPayments.length) }} items</p>
+          <p><small>Page {{ currentPage }} of {{ Math.max(totalPages, totalPaymentPages) }}</small></p>
+        </div>
+        <div class="pagination-buttons">
+          <ion-button 
+            fill="clear" 
+            [disabled]="currentPage === 1"
+            (click)="previousPage()">
+            <ion-icon name="chevron-back-outline"></ion-icon>
+            Previous
+          </ion-button>
+          <ion-button 
+            fill="clear" 
+            [disabled]="currentPage === Math.max(totalPages, totalPaymentPages)"
+            (click)="nextPage()">
+            Next
+            <ion-icon name="chevron-forward-outline"></ion-icon>
+          </ion-button>
+        </div>
+      </div>
+    </ion-card-content>
+  </ion-card>
   
   </div> <!-- End main-content -->
 
@@ -411,14 +444,15 @@
               </ion-list>
 
               <div class="receipt-actions">
-                <ion-button expand="block" (click)="downloadReceipt(selectedPayment)" [disabled]="isPdfGenerating">
+                <ion-button expand="block" (click)="downloadReceipt(selectedPayment)" [disabled]="isPdfGenerating" [color]="isPdfGenerating ? 'medium' : 'primary'">
                   <ion-spinner *ngIf="isPdfGenerating" name="circular" size="small" slot="start"></ion-spinner>
                   <ion-icon *ngIf="!isPdfGenerating" name="download-outline" slot="start"></ion-icon>
-                  {{ isPdfGenerating ? 'Generating...' : 'Download' }}
+                  {{ isPdfGenerating ? 'Generating PDF...' : 'Download' }}
                 </ion-button>
-                <ion-button expand="block" fill="outline" (click)="printReceipt(selectedPayment)" [disabled]="isPdfGenerating">
-                  <ion-icon name="print-outline" slot="start"></ion-icon>
-                  Print
+                <ion-button expand="block" fill="outline" (click)="printReceipt(selectedPayment)" [disabled]="isPdfGenerating" [color]="isPdfGenerating ? 'medium' : 'primary'">
+                  <ion-spinner *ngIf="isPdfGenerating" name="circular" size="small" slot="start"></ion-spinner>
+                  <ion-icon *ngIf="!isPdfGenerating" name="print-outline" slot="start"></ion-icon>
+                  {{ isPdfGenerating ? 'Generating PDF...' : 'Print' }}
                 </ion-button>
               </div>
             </ion-card-content>

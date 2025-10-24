@@ -1,18 +1,486 @@
-<ion-header [translucent]="true">
+<ion-header>
   <ion-toolbar>
-    <ion-title>Indira Krishna Layout - Reports</ion-title>
+    <ion-title>Reports & Analytics</ion-title>
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
+<ion-content>
   <ion-header collapse="condense">
     <ion-toolbar>
-      <ion-title size="large">Reports</ion-title>
+      <ion-title size="large">Reports & Analytics</ion-title>
     </ion-toolbar>
   </ion-header>
 
-  <div class="container">
-    <h2>Reports & Analytics</h2>
-    <p>Coming soon - Year-wise reports, sales analytics, and trend analysis</p>
+  <ion-refresher slot="fixed" (ionRefresh)="onRefresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading-container">
+    <ion-spinner name="circular" color="primary"></ion-spinner>
+    <p>Loading reports...</p>
   </div>
+
+  <!-- Main Content -->
+  <div *ngIf="!loading" class="reports-content" id="reports-content">
+    
+    <!-- Header Actions -->
+    <div class="header-actions">
+      <ion-button fill="outline" size="small" (click)="openFilterModal()">
+        <ion-icon name="filter-outline" slot="start"></ion-icon>
+        Filters
+      </ion-button>
+      <ion-button fill="outline" size="small" (click)="exportToCSV()">
+        <ion-icon name="download-outline" slot="start"></ion-icon>
+        <span *ngIf="selectedSegment === 'survey'">Survey CSV</span>
+        <span *ngIf="selectedSegment === 'owner'">Owner CSV</span>
+        <span *ngIf="selectedSegment === 'year'">Year CSV</span>
+        <span *ngIf="selectedSegment === 'overview'">Overview CSV</span>
+      </ion-button>
+      <ion-button fill="outline" size="small" (click)="exportToPDF()" [disabled]="isPdfGenerating" [color]="isPdfGenerating ? 'medium' : 'primary'">
+        <ion-spinner *ngIf="isPdfGenerating" name="circular" size="small" slot="start"></ion-spinner>
+        <ion-icon *ngIf="!isPdfGenerating" name="document-text-outline" slot="start"></ion-icon>
+        <span *ngIf="selectedSegment === 'overview' && !isPdfGenerating">Quick PDF</span>
+        <span *ngIf="selectedSegment !== 'overview' && !isPdfGenerating">Full PDF</span>
+        <span *ngIf="isPdfGenerating">Generating PDF...</span>
+      </ion-button>
+    </div>
+
+    <!-- Segment Navigation -->
+    <ion-segment value="overview" (ionChange)="onSegmentChange($event)">
+      <ion-segment-button value="overview">
+        <ion-label>Overview</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="survey">
+        <ion-label>By Survey</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="owner">
+        <ion-label>By Owner</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="year">
+        <ion-label>By Year</ion-label>
+      </ion-segment-button>
+    </ion-segment>
+
+    <!-- Overview Tab -->
+    <div *ngIf="selectedSegment === 'overview'" class="tab-content">
+      
+      <!-- Sales Overview Cards -->
+      <ion-grid>
+        <ion-row>
+          <ion-col size="6" size-md="3">
+            <ion-card class="stat-card">
+              <ion-card-content>
+                <div class="stat-item">
+                  <ion-icon name="business-outline" color="primary"></ion-icon>
+                  <h2>{{ formatNumber(salesAnalytics?.totalPlots || 0) }}</h2>
+                  <p>Total Plots</p>
+                </div>
+              </ion-card-content>
+            </ion-card>
+          </ion-col>
+          
+          <ion-col size="6" size-md="3">
+            <ion-card class="stat-card">
+              <ion-card-content>
+                <div class="stat-item">
+                  <ion-icon name="trending-up-outline" color="success"></ion-icon>
+                  <h2>{{ formatNumber(salesAnalytics?.soldPlots || 0) }}</h2>
+                  <p>Sold Plots</p>
+                </div>
+              </ion-card-content>
+            </ion-card>
+          </ion-col>
+          
+          <ion-col size="6" size-md="3">
+            <ion-card class="stat-card">
+              <ion-card-content>
+                <div class="stat-item">
+                  <ion-icon name="analytics-outline" color="warning"></ion-icon>
+                  <h2>{{ formatNumber(salesAnalytics?.preBookedPlots || 0) }}</h2>
+                  <p>Pre-booked</p>
+                </div>
+              </ion-card-content>
+            </ion-card>
+          </ion-col>
+          
+          <ion-col size="6" size-md="3">
+            <ion-card class="stat-card">
+              <ion-card-content>
+                <div class="stat-item">
+                  <ion-icon name="stats-chart-outline" color="medium"></ion-icon>
+                  <h2>{{ formatNumber(salesAnalytics?.availablePlots || 0) }}</h2>
+                  <p>Available</p>
+                </div>
+              </ion-card-content>
+            </ion-card>
+          </ion-col>
+        </ion-row>
+      </ion-grid>
+
+      <!-- Revenue Analytics -->
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>
+            <ion-icon name="trending-up-outline"></ion-icon>
+            Revenue Analytics
+          </ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <ion-grid>
+            <ion-row>
+              <ion-col size="12" size-md="6">
+                <div class="revenue-stat">
+                  <h3>Total Revenue</h3>
+                  <h2 class="revenue-amount">{{ formatCurrency(salesAnalytics?.totalRevenue || 0) }}</h2>
+                </div>
+              </ion-col>
+              <ion-col size="12" size-md="6">
+                <div class="revenue-stat">
+                  <h3>Average Rate</h3>
+                  <h2 class="rate-amount">{{ formatCurrency(salesAnalytics?.averageRate || 0) }}/sq ft</h2>
+                </div>
+              </ion-col>
+            </ion-row>
+          </ion-grid>
+        </ion-card-content>
+      </ion-card>
+
+      <!-- Current Year Performance -->
+      <ion-card *ngIf="currentYearReport">
+        <ion-card-header>
+          <ion-card-title>
+            <ion-icon name="calendar-outline"></ion-icon>
+            {{ currentYearReport.year }} Performance
+          </ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <ion-grid>
+            <ion-row>
+              <ion-col size="6">
+                <div class="year-stat">
+                  <h4>Sales This Year</h4>
+                  <p>{{ formatNumber(currentYearReport.totalSales) }} plots</p>
+                </div>
+              </ion-col>
+              <ion-col size="6">
+                <div class="year-stat">
+                  <h4>Revenue This Year</h4>
+                  <p>{{ formatCurrency(currentYearReport.totalRevenue) }}</p>
+                </div>
+              </ion-col>
+            </ion-row>
+          </ion-grid>
+        </ion-card-content>
+      </ion-card>
+
+      <!-- Sales Overview Charts -->
+      <ion-grid>
+        <ion-row>
+          <ion-col size="12" size-md="6">
+            <ion-card class="chart-card">
+              <ion-card-header>
+                <ion-card-title>
+                  <ion-icon name="pie-chart-outline"></ion-icon>
+                  Sales by Survey
+                </ion-card-title>
+              </ion-card-header>
+              <ion-card-content>
+                <div class="chart-container">
+                  <canvas #surveyChart></canvas>
+                </div>
+              </ion-card-content>
+            </ion-card>
+          </ion-col>
+          <ion-col size="12" size-md="6">
+            <ion-card class="chart-card">
+              <ion-card-header>
+                <ion-card-title>
+                  <ion-icon name="pie-chart-outline"></ion-icon>
+                  Sales by Owner
+                </ion-card-title>
+              </ion-card-header>
+              <ion-card-content>
+                <div class="chart-container">
+                  <canvas #ownerChart></canvas>
+                </div>
+              </ion-card-content>
+            </ion-card>
+          </ion-col>
+        </ion-row>
+        <ion-row>
+          <ion-col size="12">
+            <ion-card class="chart-card">
+              <ion-card-header>
+                <ion-card-title>
+                  <ion-icon name="trending-up-outline"></ion-icon>
+                  Year over Year Trends
+                </ion-card-title>
+              </ion-card-header>
+              <ion-card-content>
+                <div class="chart-container-wide">
+                  <canvas #yearTrendChart></canvas>
+                </div>
+              </ion-card-content>
+            </ion-card>
+          </ion-col>
+        </ion-row>
+        <ion-row>
+          <ion-col size="12" size-md="6">
+            <ion-card class="chart-card">
+              <ion-card-header>
+                <ion-card-title>
+                  <ion-icon name="bar-chart-outline"></ion-icon>
+                  Monthly Distribution
+                </ion-card-title>
+              </ion-card-header>
+              <ion-card-content>
+                <div class="chart-container">
+                  <canvas #monthlyChart></canvas>
+                </div>
+              </ion-card-content>
+            </ion-card>
+          </ion-col>
+          <ion-col size="12" size-md="6">
+            <ion-card class="chart-card">
+              <ion-card-header>
+                <ion-card-title>
+                  <ion-icon name="analytics-outline"></ion-icon>
+                  Revenue by Survey
+                </ion-card-title>
+              </ion-card-header>
+              <ion-card-content>
+                <div class="chart-container">
+                  <canvas #revenueChart></canvas>
+                </div>
+              </ion-card-content>
+            </ion-card>
+          </ion-col>
+        </ion-row>
+      </ion-grid>
+    </div>
+
+    <!-- Sales by Survey Tab -->
+    <div *ngIf="selectedSegment === 'survey'" class="tab-content">
+      <div *ngFor="let surveyReport of salesBySurvey" class="survey-report">
+        <ion-card>
+          <ion-card-header>
+            <ion-card-title>
+              <ion-icon name="business-outline"></ion-icon>
+              {{ surveyReport.surveyName }}
+            </ion-card-title>
+          </ion-card-header>
+          <ion-card-content>
+            <ion-grid>
+              <ion-row>
+                <ion-col size="6" size-md="3">
+                  <div class="report-metric">
+                    <h4>{{ formatNumber(surveyReport.totalPlots) }}</h4>
+                    <p>Total Plots</p>
+                  </div>
+                </ion-col>
+                <ion-col size="6" size-md="3">
+                  <div class="report-metric">
+                    <h4>{{ formatNumber(surveyReport.soldPlots) }}</h4>
+                    <p>Sold Plots</p>
+                  </div>
+                </ion-col>
+                <ion-col size="6" size-md="3">
+                  <div class="report-metric">
+                    <h4>{{ formatCurrency(surveyReport.totalRevenue) }}</h4>
+                    <p>Revenue</p>
+                  </div>
+                </ion-col>
+                <ion-col size="6" size-md="3">
+                  <div class="report-metric">
+                    <h4>{{ formatNumber(surveyReport.salesPercentage) }}%</h4>
+                    <p>Sales Share</p>
+                  </div>
+                </ion-col>
+              </ion-row>
+              <ion-row>
+                <ion-col size="12">
+                  <div class="progress-section">
+                    <div class="progress-info">
+                      <span>Sales Progress</span>
+                      <span>{{ surveyReport.soldPlots }}/{{ surveyReport.totalPlots }}</span>
+                    </div>
+                    <ion-progress-bar [value]="getProgressValue(surveyReport.soldPlots, surveyReport.totalPlots)" color="success"></ion-progress-bar>
+                  </div>
+                </ion-col>
+              </ion-row>
+            </ion-grid>
+          </ion-card-content>
+        </ion-card>
+      </div>
+    </div>
+
+    <!-- Sales by Owner Tab -->
+    <div *ngIf="selectedSegment === 'owner'" class="tab-content">
+      <div *ngFor="let ownerReport of salesByOwner" class="owner-report">
+        <ion-card>
+          <ion-card-header>
+            <ion-card-title>
+              <ion-icon name="person-outline"></ion-icon>
+              {{ ownerReport.ownerName }}
+            </ion-card-title>
+          </ion-card-header>
+          <ion-card-content>
+            <ion-grid>
+              <ion-row>
+                <ion-col size="6" size-md="3">
+                  <div class="report-metric">
+                    <h4>{{ formatNumber(ownerReport.totalPlots) }}</h4>
+                    <p>Total Plots</p>
+                  </div>
+                </ion-col>
+                <ion-col size="6" size-md="3">
+                  <div class="report-metric">
+                    <h4>{{ formatNumber(ownerReport.soldPlots) }}</h4>
+                    <p>Sold Plots</p>
+                  </div>
+                </ion-col>
+                <ion-col size="6" size-md="3">
+                  <div class="report-metric">
+                    <h4>{{ formatCurrency(ownerReport.totalRevenue) }}</h4>
+                    <p>Revenue</p>
+                  </div>
+                </ion-col>
+                <ion-col size="6" size-md="3">
+                  <div class="report-metric">
+                    <h4>{{ formatNumber(ownerReport.salesPercentage) }}%</h4>
+                    <p>Sales Share</p>
+                  </div>
+                </ion-col>
+              </ion-row>
+              <ion-row>
+                <ion-col size="12">
+                  <div class="progress-section">
+                    <div class="progress-info">
+                      <span>Sales Progress</span>
+                      <span>{{ ownerReport.soldPlots }}/{{ ownerReport.totalPlots }}</span>
+                    </div>
+                    <ion-progress-bar [value]="getProgressValue(ownerReport.soldPlots, ownerReport.totalPlots)" color="primary"></ion-progress-bar>
+                  </div>
+                </ion-col>
+              </ion-row>
+            </ion-grid>
+          </ion-card-content>
+        </ion-card>
+      </div>
+    </div>
+
+    <!-- Sales by Year Tab -->
+    <div *ngIf="selectedSegment === 'year'" class="tab-content">
+      <div *ngFor="let yearReport of salesByYear" class="year-report">
+        <ion-card>
+          <ion-card-header>
+            <ion-card-title>
+              <ion-icon name="calendar-outline"></ion-icon>
+              {{ yearReport.year }} Sales Report
+            </ion-card-title>
+          </ion-card-header>
+          <ion-card-content>
+            <!-- Year Overview -->
+            <ion-grid>
+              <ion-row>
+                <ion-col size="6" size-md="3">
+                  <div class="report-metric">
+                    <h4>{{ formatNumber(yearReport.totalSales) }}</h4>
+                    <p>Total Sales</p>
+                  </div>
+                </ion-col>
+                <ion-col size="6" size-md="3">
+                  <div class="report-metric">
+                    <h4>{{ formatCurrency(yearReport.totalRevenue) }}</h4>
+                    <p>Revenue</p>
+                  </div>
+                </ion-col>
+                <ion-col size="12" size-md="6">
+                  <div class="report-metric">
+                    <h4>{{ formatCurrency(yearReport.averageRate) }}/sq ft</h4>
+                    <p>Average Rate</p>
+                  </div>
+                </ion-col>
+              </ion-row>
+            </ion-grid>
+
+            <!-- Monthly Breakdown -->
+            <div class="monthly-breakdown">
+              <h5>Monthly Sales Distribution</h5>
+              <ion-grid>
+                <ion-row>
+                  <ion-col *ngFor="let month of ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun']" size="2">
+                    <div class="month-stat">
+                      <span class="month-count">{{ yearReport.monthlyBreakdown[month] || 0 }}</span>
+                      <span class="month-name">{{ month }}</span>
+                    </div>
+                  </ion-col>
+                </ion-row>
+                <ion-row>
+                  <ion-col *ngFor="let month of ['Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']" size="2">
+                    <div class="month-stat">
+                      <span class="month-count">{{ yearReport.monthlyBreakdown[month] || 0 }}</span>
+                      <span class="month-name">{{ month }}</span>
+                    </div>
+                  </ion-col>
+                </ion-row>
+              </ion-grid>
+            </div>
+
+            <!-- Survey Breakdown -->
+            <div class="survey-breakdown">
+              <h5>Survey-wise Sales</h5>
+              <ion-grid>
+                <ion-row>
+                  <ion-col size="4" *ngFor="let survey of ['152/1', '152/2', '152/3']">
+                    <div class="survey-year-stat">
+                      <span class="survey-count">{{ yearReport.surveyBreakdown[survey] || 0 }}</span>
+                      <span class="survey-label">{{ getSurveyDisplayName(survey) }}</span>
+                    </div>
+                  </ion-col>
+                </ion-row>
+              </ion-grid>
+            </div>
+          </ion-card-content>
+        </ion-card>
+      </div>
+      
+      <div *ngIf="salesByYear.length === 0" class="no-data">
+        <ion-icon name="calendar-outline" color="medium"></ion-icon>
+        <p>No yearly sales data available yet</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter Modal -->
+  <ion-modal [isOpen]="isFilterModalOpen" (willDismiss)="closeFilterModal()">
+    <ng-template>
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>Report Filters</ion-title>
+          <ion-button slot="end" fill="clear" (click)="closeFilterModal()">
+            Close
+          </ion-button>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content>
+        <div class="filter-content">
+          <ion-list>
+            <ion-item>
+              <ion-label>Coming Soon</ion-label>
+            </ion-item>
+            <ion-item>
+              <p>Advanced filtering options will be available in the next update</p>
+            </ion-item>
+          </ion-list>
+          
+          <div class="filter-actions">
+            <ion-button expand="block" (click)="applyFilters()">Apply Filters</ion-button>
+            <ion-button expand="block" fill="outline" (click)="clearFilters()">Clear All</ion-button>
+          </div>
+        </div>
+      </ion-content>
+    </ng-template>
+  </ion-modal>
 </ion-content>

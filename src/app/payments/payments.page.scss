@@ -329,11 +329,6 @@ ion-progress-bar {
   }
 }
 
-// Payment Method Icons
-.payment-method-icon {
-  margin-right: 8px;
-}
-
 // Responsive Design
 @media (max-width: 768px) {
   .stat-box {
@@ -385,34 +380,6 @@ ion-fab-button {
   --color: var(--ion-color-primary-contrast);
   border-left: 4px solid var(--ion-color-primary);
   animation: pulse 0.5s ease-in-out;
-}
-
-// Animation Classes
-.slide-in {
-  animation: slideIn 0.3s ease-in-out;
-}
-
-@keyframes pulse {
-  0% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.02);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 // Loading States
@@ -499,3 +466,14 @@ ion-fab-button {
     }
   }
 }
+
+// Pagination
+.pagination-card { margin: 16px; }
+.pagination-controls { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
+.pagination-info { flex: 1; }
+.pagination-info p { margin: 0; }
+.pagination-info p:first-child { font-weight: 500; }
+.pagination-info small { color: var(--ion-color-medium); }
+.pagination-buttons { display: flex; gap: 8px; }
+.pagination-buttons ion-button { --color: var(--ion-color-primary); }
+.pagination-buttons ion-button[disabled] { --color: var(--ion-color-medium); opacity: 0.5; }

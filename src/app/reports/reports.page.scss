@@ -1,3 +1,460 @@
-.container {
-  padding: 20px;
+// Loading Container
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  
+  ion-spinner {
+    margin-bottom: 16px;
+  }
+  
+  p {
+    color: var(--ion-color-medium);
+    font-size: 1rem;
+  }
+}
+
+// Reports Content
+.reports-content {
+  padding: 16px;
+}
+
+// Header Actions
+.header-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  
+  ion-button {
+    flex: 1;
+    min-width: 100px;
+  }
+}
+
+// Segment Styling
+ion-segment {
+  margin-bottom: 20px;
+  
+  ion-segment-button {
+    ion-label {
+      font-weight: 500;
+    }
+  }
+}
+
+// Tab Content
+.tab-content {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+// Stat Cards
+.stat-card {
+  margin-bottom: 16px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  
+  ion-card-content {
+    padding: 16px;
+  }
+}
+
+.stat-item {
+  text-align: center;
+  
+  ion-icon {
+    font-size: 2rem;
+    margin-bottom: 8px;
+    display: block;
+  }
+  
+  h2 {
+    margin: 8px 0 4px 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--ion-color-dark);
+  }
+  
+  p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--ion-color-medium);
+    font-weight: 500;
+  }
+}
+
+// Revenue Analytics
+.revenue-stat {
+  text-align: center;
+  padding: 16px;
+  
+  h3 {
+    margin: 0 0 8px 0;
+    font-size: 1rem;
+    color: var(--ion-color-medium);
+    font-weight: 500;
+  }
+  
+  .revenue-amount {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--ion-color-success);
+    margin: 0;
+  }
+  
+  .rate-amount {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--ion-color-primary);
+    margin: 0;
+  }
+}
+
+// Year Stats
+.year-stat {
+  text-align: center;
+  padding: 8px;
+  
+  h4 {
+    margin: 0 0 4px 0;
+    font-size: 0.9rem;
+    color: var(--ion-color-medium);
+    font-weight: 500;
+  }
+  
+  p {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--ion-color-dark);
+  }
+}
+
+// Yearly Reports
+.yearly-report {
+  margin-bottom: 16px;
+  
+  ion-card {
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  ion-card-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1.2rem;
+    color: var(--ion-color-primary);
+    
+    ion-icon {
+      font-size: 1.3rem;
+    }
+  }
+}
+
+.report-metric {
+  text-align: center;
+  padding: 8px;
+  
+  h4 {
+    margin: 0 0 4px 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--ion-color-dark);
+  }
+  
+  p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--ion-color-medium);
+  }
+}
+
+// Survey Reports
+.survey-report {
+  margin-bottom: 16px;
+  
+  ion-card {
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+}
+
+// Owner Reports
+.owner-report {
+  margin-bottom: 16px;
+  
+  ion-card {
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+}
+
+// Year Reports
+.year-report {
+  margin-bottom: 16px;
+  
+  ion-card {
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+}
+
+// Progress Section
+.progress-section {
+  margin-top: 16px;
+  
+  .progress-info {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--ion-color-dark);
+  }
+  
+  ion-progress-bar {
+    height: 8px;
+    border-radius: 4px;
+  }
+}
+
+// Monthly Breakdown
+.monthly-breakdown {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--ion-color-step-200);
+  
+  h5 {
+    margin: 0 0 12px 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--ion-color-dark);
+  }
+  
+  .month-stat {
+    text-align: center;
+    padding: 8px 4px;
+    
+    .month-count {
+      display: block;
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--ion-color-primary);
+      margin-bottom: 2px;
+    }
+    
+    .month-name {
+      font-size: 0.7rem;
+      color: var(--ion-color-medium);
+      font-weight: 500;
+    }
+  }
+}
+
+// Survey Breakdown
+.survey-breakdown {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--ion-color-step-200);
+  
+  h5 {
+    margin: 0 0 12px 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--ion-color-dark);
+  }
+  
+  .survey-year-stat {
+    text-align: center;
+    padding: 12px 8px;
+    background: var(--ion-color-light);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    
+    .survey-count {
+      display: block;
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--ion-color-success);
+      margin-bottom: 4px;
+    }
+    
+    .survey-label {
+      font-size: 0.75rem;
+      color: var(--ion-color-medium);
+      font-weight: 500;
+      line-height: 1.2;
+    }
+  }
+}
+
+.survey-metric {
+  text-align: center;
+  padding: 8px;
+  
+  h4 {
+    margin: 0 0 4px 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--ion-color-dark);
+  }
+  
+  p {
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--ion-color-medium);
+  }
+}
+
+// No Data State
+.no-data {
+  text-align: center;
+  padding: 40px 20px;
+  
+  ion-icon {
+    font-size: 3rem;
+    margin-bottom: 16px;
+    display: block;
+  }
+  
+  p {
+    color: var(--ion-color-medium);
+    font-size: 1rem;
+    margin: 0;
+  }
+}
+
+// Filter Modal
+.filter-content {
+  padding: 16px;
+}
+
+.filter-actions {
+  padding: 20px 0;
+  
+  ion-button {
+    margin-bottom: 12px;
+  }
+}
+
+// Card Headers with Icons
+ion-card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  
+  ion-icon {
+    font-size: 1.2rem;
+    color: var(--ion-color-primary);
+  }
+}
+
+// Responsive Design
+@media (max-width: 768px) {
+  .header-actions {
+    ion-button {
+      font-size: 0.8rem;
+      
+      ion-icon {
+        font-size: 1rem;
+      }
+    }
+  }
+  
+  .stat-item {
+    h2 {
+      font-size: 1.3rem;
+    }
+    
+    p {
+      font-size: 0.8rem;
+    }
+  }
+  
+  .revenue-amount {
+    font-size: 1.5rem !important;
+  }
+  
+  .rate-amount {
+    font-size: 1.2rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .reports-content {
+    padding: 12px;
+  }
+  
+  .header-actions {
+    flex-direction: column;
+    
+    ion-button {
+      flex: none;
+    }
+  }
+}
+
+// Chart styles
+.chart-card {
+  margin: 8px 0;
+  
+  ion-card-header {
+    padding-bottom: 8px;
+    
+    ion-card-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 1rem;
+      
+      ion-icon {
+        color: var(--ion-color-primary);
+      }
+    }
+  }
+  
+  ion-card-content {
+    padding: 16px;
+  }
+}
+
+.chart-container {
+  position: relative;
+  height: 250px;
+  width: 100%;
+  
+  canvas {
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+.chart-container-wide {
+  position: relative;
+  height: 300px;
+  width: 100%;
+  
+  canvas {
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+// Mobile responsive adjustments for charts
+@media (max-width: 768px) {
+  .chart-container {
+    height: 200px;
+  }
+  
+  .chart-container-wide {
+    height: 250px;
+  }
 }

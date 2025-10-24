@@ -1,6 +1,9 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
+import { Capacitor } from '@capacitor/core';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { 
@@ -60,7 +63,7 @@ import {
   trendingUpOutline,
   statsChartOutline,
   personOutline,
-  createOutline, trashOutline, chevronForwardOutline } from 'ionicons/icons';
+  createOutline, trashOutline, chevronForwardOutline, chevronBackOutline, speedometerOutline, documentOutline } from 'ionicons/icons';
 
 interface PaymentFormData {
   plotId: string;
@@ -130,7 +133,19 @@ export class PaymentsPage implements OnInit, OnDestroy {
   
   // Search and filter
   searchTerm: string = '';
-  selectedSurvey: string = 'all'; // all, 152/1, 152/2, 152/3
+  selectedSurvey: string = '152/1'; // Default to first survey: 152/1, 152/2, 152/3
+  private searchTimeout: any;
+  
+  // Pagination for large datasets (similar to plots page)
+  currentPage = 1;
+  itemsPerPage = 10; // Show 10 items per page for better mobile performance
+  displayedPlots: Plot[] = [];
+  displayedPayments: Payment[] = [];
+  totalPages = 1;
+  totalPaymentPages = 1;
+  
+  // Expose Math for template calculations
+  Math = Math;
   
   // Modal states
   isPaymentModalOpen = false;
@@ -159,11 +174,12 @@ export class PaymentsPage implements OnInit, OnDestroy {
 
   constructor(
     private plotService: PlotService,
-    private paymentService: PaymentService
+    private paymentService: PaymentService,
+    private cdr: ChangeDetectorRef
   ) {
     // Set plot service reference for payment service
     this.paymentService.setPlotService(this.plotService);
-    addIcons({statsChartOutline,trendingUpOutline,timeOutline,cashOutline,alertCircle,addOutline,receiptOutline,createOutline,trashOutline,closeOutline,downloadOutline,printOutline,chevronForwardOutline,searchOutline,cardOutline,calendarOutline,checkmarkCircle,filterOutline,walletOutline,personOutline,businessOutline});
+    addIcons({statsChartOutline,trendingUpOutline,timeOutline,cashOutline,alertCircle,documentOutline,speedometerOutline,addOutline,receiptOutline,createOutline,trashOutline,chevronBackOutline,chevronForwardOutline,closeOutline,downloadOutline,printOutline,searchOutline,cardOutline,calendarOutline,checkmarkCircle,filterOutline,walletOutline,personOutline,businessOutline});
   }
 
   ngOnInit() {
@@ -290,8 +306,16 @@ extractAllPayments() {
   }
 
   onSearchChange(event: any) {
-    this.searchTerm = event.target.value.toLowerCase();
-    this.applyFilters();
+    // Clear existing timeout
+    if (this.searchTimeout) {
+      clearTimeout(this.searchTimeout);
+    }
+    
+    // Debounce search to improve performance for large datasets
+    this.searchTimeout = setTimeout(() => {
+      this.searchTerm = event.target.value.toLowerCase();
+      this.applyFilters();
+    }, 300); // 300ms debounce
   }
 
   onSurveyFilter(value: string) {
@@ -300,6 +324,9 @@ extractAllPayments() {
   }
 
   applyFilters() {
+    // Performance optimization: Use more efficient filtering for large datasets
+    const startTime = performance.now();
+    
     // Filter plots (already pre-filtered to SOLD and PRE_BOOKED in loadData)
     this.filteredPlots = this.plots.filter(plot => {
       const matchesSearch = !this.searchTerm || 
@@ -308,7 +335,7 @@ extractAllPayments() {
         plot.purchaser?.name?.toLowerCase().includes(this.searchTerm) ||
         plot.purchaser?.mobile?.includes(this.searchTerm);
 
-      const matchesSurvey = this.selectedSurvey === 'all' || plot.surveyNumber === this.selectedSurvey;
+      const matchesSurvey = plot.surveyNumber === this.selectedSurvey;
 
       return matchesSearch && matchesSurvey;
     });
@@ -320,10 +347,59 @@ extractAllPayments() {
         payment.surveyNumber?.toLowerCase().includes(this.searchTerm) ||
         payment.customerName?.toLowerCase().includes(this.searchTerm);
 
-      const matchesSurvey = this.selectedSurvey === 'all' || payment.surveyNumber === this.selectedSurvey;
+      const matchesSurvey = payment.surveyNumber === this.selectedSurvey;
 
       return matchesSearch && matchesSurvey;
     });
+    
+    // Update pagination for filtered data
+    this.updatePagination();
+    
+    const endTime = performance.now();
+    if (endTime - startTime > 50) { // Log if filtering takes more than 50ms
+      console.log(`Payments filter performance (${this.selectedSurvey}): ${(endTime - startTime).toFixed(2)}ms for ${this.plots.length} plots and ${this.allPayments.length} payments`);
+    }
+  }
+  
+  private updatePagination() {
+    // Calculate pagination for both plots and payments
+    this.totalPages = Math.ceil(this.filteredPlots.length / this.itemsPerPage);
+    this.totalPaymentPages = Math.ceil(this.filteredPayments.length / this.itemsPerPage);
+    
+    // Ensure current page is within bounds
+    this.currentPage = Math.min(this.currentPage, Math.max(this.totalPages, this.totalPaymentPages) || 1);
+    
+    // Update displayed plots
+    const plotStartIndex = (this.currentPage - 1) * this.itemsPerPage;
+    const plotEndIndex = plotStartIndex + this.itemsPerPage;
+    this.displayedPlots = this.filteredPlots.slice(plotStartIndex, plotEndIndex);
+    
+    // Update displayed payments
+    const paymentStartIndex = (this.currentPage - 1) * this.itemsPerPage;
+    const paymentEndIndex = paymentStartIndex + this.itemsPerPage;
+    this.displayedPayments = this.filteredPayments.slice(paymentStartIndex, paymentEndIndex);
+    
+    // Log pagination info for large datasets
+    if (this.filteredPlots.length > 50 || this.filteredPayments.length > 50) {
+      console.log(`Payments pagination (${this.selectedSurvey}): Page ${this.currentPage}, showing ${this.displayedPlots.length} plots and ${this.displayedPayments.length} payments`);
+    }
+  }
+  
+  // Pagination navigation methods
+  goToPage(page: number) {
+    const maxPages = Math.max(this.totalPages, this.totalPaymentPages);
+    if (page >= 1 && page <= maxPages) {
+      this.currentPage = page;
+      this.updatePagination();
+    }
+  }
+  
+  nextPage() {
+    this.goToPage(this.currentPage + 1);
+  }
+  
+  previousPage() {
+    this.goToPage(this.currentPage - 1);
   }
 
   openPaymentModal(plot: Plot) {
@@ -582,22 +658,59 @@ extractAllPayments() {
   }
 
   async downloadReceipt(payment: Payment) {
+    if (this.isPdfGenerating) {
+      return; // Prevent multiple clicks
+    }
+
+    console.log('Starting PDF generation...');
     this.isPdfGenerating = true;
+    this.cdr.detectChanges(); // Force change detection
+    
+    // Safety timeout to reset spinner if something goes wrong
+    const safetyTimeout = setTimeout(() => {
+      if (this.isPdfGenerating) {
+        console.warn('PDF generation timeout - force resetting spinner');
+        this.isPdfGenerating = false;
+        this.cdr.detectChanges();
+      }
+    }, 30000); // 30 second timeout
+    
+    // Force change detection
+    setTimeout(() => {
+      console.log('isPdfGenerating set to:', this.isPdfGenerating);
+    }, 100);
+    
+    let receiptElement: HTMLElement | null = null;
     
     try {
+      if (!payment) {
+        throw new Error('Invalid payment data');
+      }
+
+      // Add a small delay to ensure spinner is visible
+      await new Promise(resolve => setTimeout(resolve, 500));
+
       // Create a temporary div with the receipt content
-      const receiptElement = this.createReceiptElement(payment);
+      receiptElement = this.createReceiptElement(payment);
       document.body.appendChild(receiptElement);
 
-      // Generate canvas from the receipt element
-      const canvas = await html2canvas(receiptElement, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff'
-      });
+      // Generate canvas from the receipt element with timeout
+      const canvas = await Promise.race([
+        html2canvas(receiptElement, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#ffffff',
+          logging: false,
+          imageTimeout: 10000
+        }),
+        new Promise<HTMLCanvasElement>((_, reject) => 
+          setTimeout(() => reject(new Error('Receipt generation timeout')), 20000)
+        )
+      ]);
 
-      // Remove the temporary element
-      document.body.removeChild(receiptElement);
+      if (!canvas || canvas.width === 0 || canvas.height === 0) {
+        throw new Error('Failed to generate receipt image');
+      }
 
       // Create PDF from canvas
       const imgData = canvas.toDataURL('image/png');
@@ -629,21 +742,151 @@ extractAllPayments() {
       // Generate filename
       const fileName = `receipt_${payment.receiptNumber || payment.id}.pdf`;
       
-      // Download the PDF
-      pdf.save(fileName);
+      // Mobile-friendly PDF download
+      await this.downloadPDFOnMobile(pdf, fileName);
       
     } catch (error) {
       console.error('Error generating PDF:', error);
-      // Fallback to basic browser print dialog
-      this.printReceiptFallback(payment);
+      
+      if (error instanceof Error) {
+        if (error.message.includes('timeout')) {
+          console.log('PDF generation timeout, falling back to print dialog');
+          this.printReceiptFallback(payment);
+        } else if (error.message.includes('Invalid payment')) {
+          console.error('Invalid payment data provided');
+          // Don't return here - let finally block execute
+        } else {
+          // Fallback to browser print dialog for other errors
+          this.printReceiptFallback(payment);
+        }
+      } else {
+        // Fallback to browser print dialog for unknown errors
+        this.printReceiptFallback(payment);
+      }
     } finally {
+      // Clear the safety timeout
+      clearTimeout(safetyTimeout);
+      
+      // Always reset the loading state - this is critical
       this.isPdfGenerating = false;
+      
+      // Clean up temporary element safely
+      if (receiptElement && receiptElement.parentNode) {
+        try {
+          document.body.removeChild(receiptElement);
+        } catch (cleanupError) {
+          console.warn('Error cleaning up receipt element:', cleanupError);
+        }
+      }
+      
+      console.log('PDF generation completed, spinner reset');
+      
+      // Force change detection to ensure UI updates
+      this.cdr.detectChanges();
     }
   }
 
   async printReceipt(payment: Payment) {
     // For mobile, downloading PDF is often more practical than printing
     await this.downloadReceipt(payment);
+  }
+
+  private async downloadPDFOnMobile(pdf: jsPDF, fileName: string): Promise<void> {
+    try {
+      // Check if we're running on a native device
+      const isNativePlatform = Capacitor.isNativePlatform();
+      
+      if (isNativePlatform) {
+        // Native mobile app - use Capacitor Filesystem
+        console.log('Saving PDF on native platform...');
+        
+        // Get PDF as base64 string
+        const pdfBase64 = pdf.output('datauristring').split(',')[1];
+        
+        // Save to device using Filesystem plugin
+        const result = await Filesystem.writeFile({
+          path: fileName,
+          data: pdfBase64,
+          directory: Directory.Documents,
+          recursive: true
+        });
+        
+        console.log('PDF saved to:', result.uri);
+        
+        // Try to share the file if Share plugin is available
+        try {
+          await Share.share({
+            title: 'Payment Receipt',
+            text: `Payment receipt from Indira Krishna Layout`,
+            url: result.uri,
+            dialogTitle: 'Share Receipt'
+          });
+        } catch (shareError) {
+          console.log('Share not available, file saved to Documents folder');
+          // Show a toast or alert that file was saved
+          this.showFileDownloadSuccess(fileName);
+        }
+        
+      } else {
+        // Web platform - use traditional browser download
+        console.log('Saving PDF on web platform...');
+        
+        const pdfBlob = pdf.output('blob');
+        
+        // Try Web Share API first (if available)
+        if (navigator.share && navigator.canShare) {
+          try {
+            const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
+            if (navigator.canShare({ files: [file] })) {
+              await navigator.share({
+                title: 'Payment Receipt',
+                text: 'Payment receipt from Indira Krishna Layout',
+                files: [file]
+              });
+              return;
+            }
+          } catch (shareError) {
+            console.log('Web Share API failed, falling back to download');
+          }
+        }
+        
+        // Fallback: Create download link
+        const url = URL.createObjectURL(pdfBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        link.style.display = 'none';
+        
+        document.body.appendChild(link);
+        link.click();
+        
+        // Clean up
+        setTimeout(() => {
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        }, 100);
+        
+        this.showFileDownloadSuccess(fileName);
+      }
+      
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      
+      // Fallback for any errors - try basic browser download
+      try {
+        pdf.save(fileName);
+        this.showFileDownloadSuccess(fileName);
+      } catch (fallbackError) {
+        console.error('Fallback download also failed:', fallbackError);
+        throw new Error('Unable to save PDF file. Please try again.');
+      }
+    }
+  }
+  
+  private showFileDownloadSuccess(fileName: string) {
+    // You can replace this with a proper toast notification
+    console.log(`✅ Receipt downloaded successfully: ${fileName}`);
+    // TODO: Add proper toast notification here
   }
 
   private createReceiptElement(payment: Payment): HTMLElement {

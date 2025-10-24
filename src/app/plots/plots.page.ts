@@ -27,7 +27,6 @@ import {
   IonTextarea,
   IonSelect,
   IonSelectOption,
-  IonDatetime,
   IonBadge,
   IonRefresher,
   IonRefresherContent,
@@ -53,7 +52,7 @@ import {
   checkmarkCircle,
   timeOutline,
   ellipseOutline,
-  closeOutline, lockClosedOutline } from 'ionicons/icons';
+  closeOutline, lockClosedOutline, chevronBackOutline, chevronForwardOutline, speedometerOutline } from 'ionicons/icons';
 
 @Component({
   selector: 'app-plots',
@@ -103,7 +102,8 @@ export class PlotsPage implements OnInit, OnDestroy {
   
   // Search and filter
   searchTerm: string = '';
-  selectedSurvey: string = 'all';
+  selectedSurvey: string = '152/1'; // Default to first survey instead of 'all'
+  private searchTimeout: any;
   
   // Loading states
   loading = true;
@@ -111,10 +111,24 @@ export class PlotsPage implements OnInit, OnDestroy {
   // Google Sheets integration state
   isGoogleSheetsEnabled = false;
   
+  // Cached counts for performance (to avoid recalculating on every change detection)
+  filteredAvailableCount = 0;
+  filteredPreBookedCount = 0;
+  filteredSoldCount = 0;
+  
+  // Pagination for large datasets (especially 152/3 with 166 plots)
+  currentPage = 1;
+  itemsPerPage = 10; // Show 50 plots per page for better mobile performance
+  displayedPlots: Plot[] = [];
+  totalPages = 1;
+  
   // Expose enums to template
   PlotStatus = PlotStatus;
   SurveyNumber = SurveyNumber;
   OwnerType = OwnerType;
+  
+  // Expose Math for template calculations
+  Math = Math;
   
   // Modal states
   isModalOpen = false;
@@ -143,7 +157,7 @@ export class PlotsPage implements OnInit, OnDestroy {
     private plotService: PlotService,
     private toastController: ToastController
   ) {
-    addIcons({createOutline,businessOutline,cashOutline,personOutline,addOutline,closeOutline,lockClosedOutline,searchOutline,eyeOutline,trashOutline,filterOutline,calendarOutline,checkmarkCircle,timeOutline,ellipseOutline});
+        addIcons({createOutline,businessOutline,cashOutline,personOutline,chevronBackOutline,chevronForwardOutline,lockClosedOutline,closeOutline,addOutline,searchOutline,eyeOutline,trashOutline,filterOutline,calendarOutline,checkmarkCircle,timeOutline,ellipseOutline,speedometerOutline});
   }
 
   ngOnInit() {
@@ -207,8 +221,16 @@ export class PlotsPage implements OnInit, OnDestroy {
   }
 
   onSearchChange(event: any) {
-    this.searchTerm = event.target.value.toLowerCase();
-    this.applyFilters();
+    // Clear existing timeout
+    if (this.searchTimeout) {
+      clearTimeout(this.searchTimeout);
+    }
+    
+    // Debounce search to improve performance for large datasets (especially 152/3 with 166 plots)
+    this.searchTimeout = setTimeout(() => {
+      this.searchTerm = event.target.value.toLowerCase();
+      this.applyFilters();
+    }, 300); // 300ms debounce
   }
 
   onSurveyFilter(event: any) {
@@ -222,18 +244,95 @@ export class PlotsPage implements OnInit, OnDestroy {
   }
 
   applyFilters() {
+    // Performance optimization: Use more efficient filtering for large datasets (152/3 has 166 plots)
+    const startTime = performance.now();
+    
     this.filteredPlots = this.plots.filter(plot => {
-      const matchesSearch = !this.searchTerm || 
-        plot.plotNumber.toLowerCase().includes(this.searchTerm) ||
-        plot.surveyNumber.toLowerCase().includes(this.searchTerm) ||
-        plot.purchaser?.name?.toLowerCase().includes(this.searchTerm) ||
-        plot.purchaser?.mobile?.includes(this.searchTerm);
-
-      const matchesSurvey = this.selectedSurvey === 'all' || 
-        plot.surveyNumber === this.selectedSurvey;
-
-      return matchesSearch && matchesSurvey;
+      // Survey filter first (most selective)
+      if (plot.surveyNumber !== this.selectedSurvey) {
+        return false;
+      }
+      
+      // Search filter only if there's a search term
+      if (this.searchTerm) {
+        const searchLower = this.searchTerm;
+        return (
+          plot.plotNumber.toLowerCase().includes(searchLower) ||
+          plot.surveyNumber.toLowerCase().includes(searchLower) ||
+          plot.purchaser?.name?.toLowerCase().includes(searchLower) ||
+          plot.purchaser?.mobile?.includes(searchLower)
+        );
+      }
+      
+      return true;
     });
+    
+    // Update cached counts to avoid recalculating in template
+    this.updateCachedCounts();
+    
+    // Update pagination for large datasets
+    this.updatePagination();
+    
+    const endTime = performance.now();
+    if (endTime - startTime > 50) { // Log if filtering takes more than 50ms
+      console.log(`Filter performance (${this.selectedSurvey}): ${(endTime - startTime).toFixed(2)}ms for ${this.plots.length} plots → ${this.filteredPlots.length} filtered`);
+    }
+  }
+  
+  private updateCachedCounts() {
+    // Use single pass through array for better performance with large datasets
+    let availableCount = 0;
+    let preBookedCount = 0;
+    let soldCount = 0;
+    
+    for (const plot of this.filteredPlots) {
+      switch (plot.status) {
+        case PlotStatus.AVAILABLE:
+          availableCount++;
+          break;
+        case PlotStatus.PRE_BOOKED:
+          preBookedCount++;
+          break;
+        case PlotStatus.SOLD:
+          soldCount++;
+          break;
+      }
+    }
+    
+    this.filteredAvailableCount = availableCount;
+    this.filteredPreBookedCount = preBookedCount;
+    this.filteredSoldCount = soldCount;
+  }
+  
+  private updatePagination() {
+    // Calculate pagination for better performance with large datasets
+    this.totalPages = Math.ceil(this.filteredPlots.length / this.itemsPerPage);
+    this.currentPage = Math.min(this.currentPage, this.totalPages || 1);
+    
+    const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+    const endIndex = startIndex + this.itemsPerPage;
+    this.displayedPlots = this.filteredPlots.slice(startIndex, endIndex);
+    
+    // Log pagination info for large surveys
+    if (this.filteredPlots.length > 100) {
+      console.log(`Pagination (${this.selectedSurvey}): Page ${this.currentPage}/${this.totalPages}, showing ${this.displayedPlots.length} of ${this.filteredPlots.length} plots`);
+    }
+  }
+  
+  // Pagination navigation methods
+  goToPage(page: number) {
+    if (page >= 1 && page <= this.totalPages) {
+      this.currentPage = page;
+      this.updatePagination();
+    }
+  }
+  
+  nextPage() {
+    this.goToPage(this.currentPage + 1);
+  }
+  
+  previousPage() {
+    this.goToPage(this.currentPage - 1);
   }
 
   openEditPlotModal(plot: Plot) {
@@ -494,18 +593,13 @@ export class PlotsPage implements OnInit, OnDestroy {
 
   // Check if survey field should be disabled when editing
   isSurveyFieldDisabled(): boolean {
-    // Disable survey field when:
-    // 1. Editing mode AND a specific survey is selected (not 'all')
-    // 2. Or when adding and a specific survey filter is active
-    return this.selectedSurvey !== 'all';
+    // Always disable survey field since we're always in a specific survey context
+    return true;
   }
 
   getSurveyFieldHelperText(): string {
-    if (this.selectedSurvey !== 'all') {
-      const surveyName = this.getSurveyDisplayName(this.selectedSurvey as SurveyNumber);
-      return `Survey locked to current filter: ${surveyName}`;
-    }
-    return 'Select the survey for this plot';
+    const surveyName = this.getSurveyDisplayName(this.selectedSurvey as SurveyNumber);
+    return `Survey locked to current filter: ${surveyName}`;
   }
 
   // Filtered count methods that work with current filters

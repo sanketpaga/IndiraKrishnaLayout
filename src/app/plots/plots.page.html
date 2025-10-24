@@ -36,9 +36,6 @@
     
     <div class="filter-section">
       <ion-segment [(ngModel)]="selectedSurvey" (ngModelChange)="onSurveyFilterChange($event)">
-        <ion-segment-button value="all">
-          <ion-label>All Surveys</ion-label>
-        </ion-segment-button>
         <ion-segment-button value="152/1">
           <ion-label>152/1</ion-label>
         </ion-segment-button>
@@ -55,6 +52,14 @@
   <!-- Plot Summary Stats -->
   <ion-card>
     <ion-card-content>
+      <!-- Performance notice for large datasets -->
+      <div *ngIf="selectedSurvey === '152/3' && filteredPlots.length > 100" class="performance-notice">
+        <ion-chip color="warning">
+          <ion-icon name="speedometer-outline"></ion-icon>
+          <ion-label>Large Dataset: {{ filteredPlots.length }} plots - Using pagination for better performance</ion-label>
+        </ion-chip>
+      </div>
+      
       <ion-grid>
         <ion-row>
           <ion-col size="3">
@@ -65,19 +70,19 @@
           </ion-col>
           <ion-col size="3">
             <div class="stat-box">
-              <ion-badge color="light">{{ getFilteredAvailablePlotsCount() }}</ion-badge>
+              <ion-badge color="light">{{ filteredAvailableCount }}</ion-badge>
               <ion-label>Available</ion-label>
             </div>
           </ion-col>
           <ion-col size="3">
             <div class="stat-box">
-              <ion-badge color="warning">{{ getFilteredPreBookedPlotsCount() }}</ion-badge>
+              <ion-badge color="warning">{{ filteredPreBookedCount }}</ion-badge>
               <ion-label>Pre-booked</ion-label>
             </div>
           </ion-col>
           <ion-col size="3">
             <div class="stat-box">
-              <ion-badge color="success">{{ getFilteredSoldPlotsCount() }}</ion-badge>
+              <ion-badge color="success">{{ filteredSoldCount }}</ion-badge>
               <ion-label>Sold</ion-label>
             </div>
           </ion-col>
@@ -88,7 +93,7 @@
 
   <!-- Plot List -->
   <div class="plot-list">
-    <ion-card *ngFor="let plot of filteredPlots; trackBy: trackByPlot" class="plot-card">
+    <ion-card *ngFor="let plot of displayedPlots; trackBy: trackByPlot" class="plot-card">
       <ion-card-header>
         <div class="plot-header">
           <div class="plot-title">
@@ -148,6 +153,34 @@
       </ion-card-content>
     </ion-card>
   </div>
+  
+  <!-- Pagination Controls for Large Datasets (especially 152/3 with 166 plots) -->
+  <ion-card *ngIf="totalPages > 1" class="pagination-card">
+    <ion-card-content>
+      <div class="pagination-controls">
+        <div class="pagination-info">
+          <p>Showing {{ (currentPage - 1) * itemsPerPage + 1 }}-{{ Math.min(currentPage * itemsPerPage, filteredPlots.length) }} of {{ filteredPlots.length }} plots</p>
+          <p><small>Page {{ currentPage }} of {{ totalPages }}</small></p>
+        </div>
+        <div class="pagination-buttons">
+          <ion-button 
+            fill="clear" 
+            [disabled]="currentPage === 1"
+            (click)="previousPage()">
+            <ion-icon name="chevron-back-outline"></ion-icon>
+            Previous
+          </ion-button>
+          <ion-button 
+            fill="clear" 
+            [disabled]="currentPage === totalPages"
+            (click)="nextPage()">
+            Next
+            <ion-icon name="chevron-forward-outline"></ion-icon>
+          </ion-button>
+        </div>
+      </div>
+    </ion-card-content>
+  </ion-card>
   
   </div> <!-- End main-content -->
 

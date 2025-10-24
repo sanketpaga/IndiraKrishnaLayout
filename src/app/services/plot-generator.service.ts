@@ -139,13 +139,13 @@ export class PlotGeneratorService {
   private getDefaultRatePerSqMeter(survey: SurveyNumber): number {
     switch (survey) {
       case SurveyNumber.SURVEY_152_1:
-        return 27000; // Rs. 27,000 per sq meter for Bapurao's survey
+        return 11000; // Rs. 27,000 per sq meter for Bapurao's survey
       case SurveyNumber.SURVEY_152_2:
-        return 30000; // Rs. 30,000 per sq meter for Narayanrao's survey
+        return 11000; // Rs. 30,000 per sq meter for Narayanrao's survey
       case SurveyNumber.SURVEY_152_3:
-        return 28000; // Rs. 28,000 per sq meter for shared survey
+        return 11000; // Rs. 28,000 per sq meter for shared survey
       default:
-        return 27000;
+        return 11000;
     }
   }
 

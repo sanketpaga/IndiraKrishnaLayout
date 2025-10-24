@@ -18,6 +18,48 @@
   }
 }
 
+// Pagination Section (for large datasets like 152/3 with 166 plots)
+.pagination-card {
+  margin: 16px;
+  
+  .pagination-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    
+    .pagination-info {
+      flex: 1;
+      
+      p {
+        margin: 0;
+        
+        &:first-child {
+          font-weight: 500;
+        }
+        
+        small {
+          color: var(--ion-color-medium);
+        }
+      }
+    }
+    
+    .pagination-buttons {
+      display: flex;
+      gap: 8px;
+      
+      ion-button {
+        --color: var(--ion-color-primary);
+        
+        &[disabled] {
+          --color: var(--ion-color-medium);
+        }
+      }
+    }
+  }
+}
+
 // Stats Section
 .stat-box {
   text-align: center;
