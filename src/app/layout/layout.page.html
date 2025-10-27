@@ -55,8 +55,194 @@
     </ion-card-content>
   </ion-card>
 
-  <!-- Plot Grid -->
-  <div class="plot-grid-container">
+  <!-- View Mode Tabs -->
+  <div class="view-tabs">
+    <ion-segment [(ngModel)]="selectedView" (ionChange)="onViewChange($event)">
+      <ion-segment-button value="grid">
+        <ion-label>Number Grid</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="physical">
+        <ion-label>Physical Layout</ion-label>
+      </ion-segment-button>
+    </ion-segment>
+  </div>
+
+  <!-- Physical Layout View for Survey 152/1 -->
+  <div class="layout-map-container" *ngIf="selectedView === 'physical' && selectedSurvey === '152/1'">
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>Survey 152/1 - Physical Layout Map</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <!-- Zoom Controls -->
+        <div class="zoom-controls">
+          <ion-button 
+            fill="solid" 
+            size="small" 
+            color="primary"
+            (click)="zoomOut()"
+            [disabled]="zoomLevel <= minZoom"
+          >
+            −
+          </ion-button>
+          <span class="zoom-level">{{ (zoomLevel * 100).toFixed(0) }}%</span>
+          <ion-button 
+            fill="solid" 
+            size="small" 
+            color="primary"
+            (click)="zoomIn()"
+            [disabled]="zoomLevel >= maxZoom"
+          >
+            +
+          </ion-button>
+          <ion-button 
+            fill="solid" 
+            size="small" 
+            color="secondary"
+            (click)="resetZoom()"
+          >
+            ↻
+          </ion-button>
+        </div>
+        
+        <div class="layout-map-image">
+          <img 
+            src="/assets/layout/layout-map-152_1.jpg" 
+            alt="Survey 152/1 Layout Map"
+            class="layout-image"
+            [ngStyle]="getImageStyle()"
+            (mousedown)="onMouseDown($event)"
+            (mousemove)="onMouseMove($event)"
+            (mouseup)="onMouseUp($event)"
+            (mouseleave)="onMouseUp($event)"
+            (touchstart)="onTouchStart($event)"
+            (touchmove)="onTouchMove($event)"
+            (touchend)="onTouchEnd($event)"
+            (dragstart)="$event.preventDefault()"
+          />
+        </div>
+      </ion-card-content>
+    </ion-card>
+  </div>
+
+  <!-- Physical Layout View for Survey 152/2 -->
+  <div class="layout-map-container" *ngIf="selectedView === 'physical' && selectedSurvey === '152/2'">
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>Survey 152/2 - Physical Layout Map</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <!-- Zoom Controls -->
+        <div class="zoom-controls">
+          <ion-button 
+            fill="solid" 
+            size="small" 
+            color="primary"
+            (click)="zoomOut()"
+            [disabled]="zoomLevel <= minZoom"
+          >
+            −
+          </ion-button>
+          <span class="zoom-level">{{ (zoomLevel * 100).toFixed(0) }}%</span>
+          <ion-button 
+            fill="solid" 
+            size="small" 
+            color="primary"
+            (click)="zoomIn()"
+            [disabled]="zoomLevel >= maxZoom"
+          >
+            +
+          </ion-button>
+          <ion-button 
+            fill="solid" 
+            size="small" 
+            color="secondary"
+            (click)="resetZoom()"
+          >
+            ↻
+          </ion-button>
+        </div>
+        
+        <div class="layout-map-image">
+          <img 
+            src="/assets/layout/layout-map-152_2.jpg" 
+            alt="Survey 152/2 Layout Map"
+            class="layout-image"
+            [ngStyle]="getImageStyle()"
+            (mousedown)="onMouseDown($event)"
+            (mousemove)="onMouseMove($event)"
+            (mouseup)="onMouseUp($event)"
+            (mouseleave)="onMouseUp($event)"
+            (touchstart)="onTouchStart($event)"
+            (touchmove)="onTouchMove($event)"
+            (touchend)="onTouchEnd($event)"
+            (dragstart)="$event.preventDefault()"
+          />
+        </div>
+      </ion-card-content>
+    </ion-card>
+  </div>
+
+  <!-- Physical Layout View for Survey 152/3 -->
+  <div class="layout-map-container" *ngIf="selectedView === 'physical' && selectedSurvey === '152/3'">
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>Survey 152/3 - Physical Layout Map</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <!-- Zoom Controls -->
+        <div class="zoom-controls">
+          <ion-button 
+            fill="solid" 
+            size="small" 
+            color="primary"
+            (click)="zoomOut()"
+            [disabled]="zoomLevel <= minZoom"
+          >
+            −
+          </ion-button>
+          <span class="zoom-level">{{ (zoomLevel * 100).toFixed(0) }}%</span>
+          <ion-button 
+            fill="solid" 
+            size="small" 
+            color="primary"
+            (click)="zoomIn()"
+            [disabled]="zoomLevel >= maxZoom"
+          >
+            +
+          </ion-button>
+          <ion-button 
+            fill="solid" 
+            size="small" 
+            color="secondary"
+            (click)="resetZoom()"
+          >
+            ↻
+          </ion-button>
+        </div>
+        
+        <div class="layout-map-image">
+          <img 
+            src="/assets/layout/layout-map-152_3.jpg" 
+            alt="Survey 152/3 Layout Map"
+            class="layout-image"
+            [ngStyle]="getImageStyle()"
+            (mousedown)="onMouseDown($event)"
+            (mousemove)="onMouseMove($event)"
+            (mouseup)="onMouseUp($event)"
+            (mouseleave)="onMouseUp($event)"
+            (touchstart)="onTouchStart($event)"
+            (touchmove)="onTouchMove($event)"
+            (touchend)="onTouchEnd($event)"
+            (dragstart)="$event.preventDefault()"
+          />
+        </div>
+      </ion-card-content>
+    </ion-card>
+  </div>
+
+  <!-- Number Grid View -->
+  <div class="plot-grid-container" *ngIf="selectedView === 'grid'">
     <div class="plot-grid">
       <div 
         class="plot-row" 

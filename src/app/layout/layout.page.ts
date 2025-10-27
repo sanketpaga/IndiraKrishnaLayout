@@ -14,7 +14,8 @@ import {
   IonCardTitle,
   IonCardContent,
   IonChip,
-  IonIcon
+  IonIcon,
+  IonButton
 } from '@ionic/angular/standalone';
 import { PlotService } from '../services/plot.service';
 import { Plot, PlotStatus, SurveyNumber } from '../models/plot.model';
@@ -40,7 +41,8 @@ import { SURVEY_CONFIGS } from '../models/survey-config.model';
     IonCardTitle,
     IonCardContent,
     IonChip,
-    IonIcon
+    IonIcon,
+    IonButton
   ]
 })
 export class LayoutPage implements OnInit {
@@ -48,6 +50,22 @@ export class LayoutPage implements OnInit {
   plots: Plot[] = [];
   filteredPlots: Plot[] = [];
   surveyConfigs = SURVEY_CONFIGS;
+  
+  // View mode for tabs
+  selectedView: string = 'grid'; // 'grid' or 'physical'
+  
+  // Zoom functionality for physical layout
+  zoomLevel: number = 1;
+  minZoom: number = 0.5;
+  maxZoom: number = 3;
+  zoomStep: number = 0.25;
+  
+  // Drag functionality for zoomed images
+  isDragging: boolean = false;
+  dragStartX: number = 0;
+  dragStartY: number = 0;
+  translateX: number = 0;
+  translateY: number = 0;
   
   // Expose enums to template
   PlotStatus = PlotStatus;
@@ -80,6 +98,91 @@ export class LayoutPage implements OnInit {
   onSurveyChange(event: any) {
     this.selectedSurvey = event.detail.value;
     this.filterPlotsBySurvey();
+  }
+
+  onViewChange(event: any) {
+    this.selectedView = event.detail.value;
+    // Reset zoom when switching views
+    this.zoomLevel = 1;
+  }
+
+  // Zoom functionality methods
+  zoomIn() {
+    if (this.zoomLevel < this.maxZoom) {
+      this.zoomLevel += this.zoomStep;
+    }
+  }
+
+  zoomOut() {
+    if (this.zoomLevel > this.minZoom) {
+      this.zoomLevel -= this.zoomStep;
+    }
+  }
+
+  resetZoom() {
+    this.zoomLevel = 1;
+    this.translateX = 0;
+    this.translateY = 0;
+  }
+
+  getImageStyle() {
+    return {
+      'transform': `scale(${this.zoomLevel}) translate(${this.translateX}px, ${this.translateY}px)`,
+      'transition': this.isDragging ? 'none' : 'transform 0.3s ease',
+      'cursor': this.zoomLevel > 1 ? 'grab' : 'default'
+    };
+  }
+
+  // Drag functionality methods
+  onMouseDown(event: MouseEvent) {
+    if (this.zoomLevel > 1) {
+      this.isDragging = true;
+      this.dragStartX = event.clientX - this.translateX;
+      this.dragStartY = event.clientY - this.translateY;
+      event.preventDefault();
+    }
+  }
+
+  onMouseMove(event: MouseEvent) {
+    if (this.isDragging && this.zoomLevel > 1) {
+      this.translateX = event.clientX - this.dragStartX;
+      this.translateY = event.clientY - this.dragStartY;
+      event.preventDefault();
+    }
+  }
+
+  onMouseUp(event: MouseEvent) {
+    if (this.isDragging) {
+      this.isDragging = false;
+      event.preventDefault();
+    }
+  }
+
+  // Touch events for mobile
+  onTouchStart(event: TouchEvent) {
+    if (this.zoomLevel > 1 && event.touches.length === 1) {
+      this.isDragging = true;
+      const touch = event.touches[0];
+      this.dragStartX = touch.clientX - this.translateX;
+      this.dragStartY = touch.clientY - this.translateY;
+      event.preventDefault();
+    }
+  }
+
+  onTouchMove(event: TouchEvent) {
+    if (this.isDragging && this.zoomLevel > 1 && event.touches.length === 1) {
+      const touch = event.touches[0];
+      this.translateX = touch.clientX - this.dragStartX;
+      this.translateY = touch.clientY - this.dragStartY;
+      event.preventDefault();
+    }
+  }
+
+  onTouchEnd(event: TouchEvent) {
+    if (this.isDragging) {
+      this.isDragging = false;
+      event.preventDefault();
+    }
   }
 
   filterPlotsBySurvey() {
